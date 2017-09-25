@@ -7,6 +7,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h> /* To use read function */
 
 #define BAUDRATE B38400
 #define _POSIX_SOURCE 1 /* POSIX compliant source */
@@ -84,7 +85,7 @@ int main(int argc, char** argv)
       if (buf[0]=='\0') STOP=TRUE;
       chr[pos++] = buf[0];
     }
-    printf("Complete msg: %s, nº chars: %d\n", chr, strlen(chr));
+    printf("Complete msg: %s, nº chars: %d\n", chr, (int)strlen(chr));
 
     res = write(fd, chr, pos);
     if(res == -1){

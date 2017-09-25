@@ -19,11 +19,11 @@ volatile int STOP=FALSE;
 
 int main(int argc, char** argv)
 {
-    int fd,c, res;
+    int fd,res;
     struct termios oldtio,newtio;
     char buf[255];
     char readBuf[255];
-    int i, sum = 0, speed = 0;
+   // int i, sum = 0, speed = 0;
 
     if ( (argc < 2) ||
   	     ((strcmp("/dev/ttyS0", argv[1])!=0) &&
@@ -77,11 +77,7 @@ int main(int argc, char** argv)
     printf("New termios structure set\n");
 
 
-      char* returnValue = gets(buf);
-      if (returnValue == NULL) {
-        perror("gets");
-        exit(-1);
-      }
+      gets(buf);
       int bufLength = strlen(buf) + 1;
       res = write(fd,buf,bufLength);
       printf("%d bytes written\n", res);
