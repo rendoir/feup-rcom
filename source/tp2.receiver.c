@@ -14,11 +14,10 @@
 #define FLAG 0x7e
 #define A 0x03
 #define C_SET 0x03
-#define C_UA 0x01
+#define C_UA 0x07
 
+/* Global unsigned acknowledge array */
 unsigned char g_ua[5];
-
-
 
 
 int main(int argc, char** argv){
@@ -31,6 +30,7 @@ int main(int argc, char** argv){
 	g_ua[1] = A;
 	g_ua[2] = C_UA;
 	g_ua[3] = g_ua[1]^g_ua[2];
+	g_ua[4] = FLAG;
 
     char serialName[255] = "/dev/ttyS";
     if(argv[1]!= 0) strcat(serialName, argv[1]);
@@ -92,48 +92,56 @@ int main(int argc, char** argv){
 		printf("current state = %d\n",state);
 		printf("read byte: 0x%x, num bytes= %d\n",c,res);
 		switch(state){
-			case 0:
-			if (c == FLAG){
-				package_received[0]=FLAG;
-				state=1;
+			case 0:{
+				if (c == FLAG){
+					package_received[0] = FLAG;
+					state = 1;
+				}
+				break;
 			}
-			break;
-			case 1:
-			if (c == A){
-				package_received[1]=A;
-				state=2;
-			}else if (c != FLAG) {
-				state = 0;
+			case 1:{
+				if (c == A){
+					package_received[1] = A;
+					state = 2;
+				}else if (c != FLAG) {
+					state = 0;
+				}
+				break;
 			}
-			break;
-			case 2:
-			if (c == C_SET){
-				package_received[2]=C_SET;
-				state = 3;
-			}else if (c == FLAG){
-				state = 1;
-			}else{
-				state = 0;
+			case 2:{
+				if (c == C_SET){
+					package_received[2]=C_SET;
+					state = 3;
+				}else if (c == FLAG){
+					state = 1;
+				}else{
+					state = 0;
+				}
+				break;
 			}
-			break;
-			case 3:
-			if (c == (package_received[1]^package_received[2])){
-				state = 4;
-			}else {
-				state = 0;
+			case 3:{
+				if (c == (package_received[1]^package_received[2])){
+					state = 4;
+				}else {
+					state = 0;
+				}
+				break;
 			}
-			break;
-			case 4:
-			if (c == FLAG){
-				state = 5;
-			}else{
-				state = 0;
+			case 4:{
+				if (c == FLAG){
+					state = 5;
+				}else{
+					state = 0;
+				}
+				break;
 			}
-			break;
 		}
 	}
 	printf("Received SET\n");
-	printf("Sending acknowledge");
+	printf("Sending acknowledge\n");
+	res = write(fd,g_ua,5);
+	printf("%d bytes written\n",res);
+	
 	return 0;
 
 }
