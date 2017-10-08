@@ -93,16 +93,12 @@ int main(int argc, char** argv)
     exit(-1);
   }
 
-  //Write to serial port
-  res = write(sp_fd, set, 5);
-  printf("%d bytes written\n", res);
-
   while(conta < 4){
     if(flag){
        alarm(3);                 // activa alarme de 3s
        flag=0;
 			 state = 0;
-			 //Try to send message again.
+			 //Try to send message
 			 res = write(sp_fd, set, 5);
 			 printf("Try number %d, %d bytes written", conta, res);
        //Read from serial port
