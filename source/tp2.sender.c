@@ -101,6 +101,10 @@ int main(int argc, char** argv)
     if(flag){
        alarm(3);                 // activa alarme de 3s
        flag=0;
+			 state = 0;
+			 //Try to send message again.
+			 res = write(sp_fd, set, 5);
+			 printf("Try number %d, %d bytes written", conta, res);
        //Read from serial port
       unsigned char read_char;
       unsigned char package_received[5];
@@ -155,20 +159,16 @@ int main(int argc, char** argv)
             }
           }
         }
-        
+
       }
       if (state == 5){
         printf("Acknowledge received\n");
-      }else if (conta <4){
-        //Try to send message again.
-        res = write(sp_fd, set, 5);
-        printf("Try number %d, %d bytes written\n", conta, res);
+				break;
       }
-      
     }
  }
 
-  
+
 
   //Reset termios to the original
   if ( tcsetattr(sp_fd,TCSANOW,&old_tio) == -1) {
