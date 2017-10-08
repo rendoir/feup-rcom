@@ -104,7 +104,7 @@ int main(int argc, char** argv)
        //Read from serial port
       unsigned char read_char;
       unsigned char package_received[5];
-      while(state != 5 && flag=0) {
+      while(state != 5 && flag == 0) {
         res = read(sp_fd, &read_char, 1);
         if (res > 0){
           printf("current state = %d\n",state);
