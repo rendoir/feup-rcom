@@ -100,7 +100,7 @@ int main(int argc, char** argv)
 			 state = 0;
 			 //Try to send message
 			 res = write(sp_fd, set, 5);
-			 printf("Try number %d, %d bytes written", conta, res);
+			 printf("Try number %d, %d bytes written\n", conta, res);
        //Read from serial port
       unsigned char read_char;
       unsigned char package_received[5];
