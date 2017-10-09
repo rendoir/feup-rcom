@@ -27,6 +27,10 @@
 volatile int STOP = FALSE;
 
 int flag=1, conta=1;
+
+// File descriptor used to write and read through serial port.
+int sp_fd;
+
 /**
 * Atende Alarme
 */
@@ -37,63 +41,56 @@ void atende()
 	conta++;
 }
 
-int main(int argc, char** argv)
-{
-  int sp_fd;
-  int res;
-  int state = 0;
-  struct termios old_tio, new_tio;
-  unsigned char set[5];
+unsigned long writeCounter = 0;
+int llwrite(char* arrayToWrite){
+	// do stuffing here
+	int i, res;
+	char bcc2 = 0;
+	int arrayLength = sizeof(arrayToWrite) / sizeof(arrayToWrite[0]);
+	for (i = 0; i < arrayLength; i++){
+		if (arrayToWrite[i] == 0x7e){
 
-  (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+		}else if (arrayToWrite[i] == 0x7d){
 
-  //Read command line arguments
-  if ( (argc < 2) ||
-  ((strcmp("/dev/ttyS0", argv[1])!=0) &&
-  (strcmp("/dev/ttyS1", argv[1])!=0) )) {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
-  }
+		}
+		bcc2 = bcc2 ^ arrayToWrite[i];
+	}
+	char* trama = malloc(arrayLength + 6 * sizeof(char));
+	trama[0] = FLAG;
+	trama[1] = A;
+	trama[2] = (char)(writeCounter++ % 2);
+	trama[3] = trama[1] ^ trama[2];
+	memcpy(&trama[4], arrayToWrite, arrayLength);
+	trama[arrayLength + 4] = bcc2;
+	trama[arrayLength + 5] = FLAG;
+	res = write(sp_fd,trama,sizeof(trama)/sizeof(trama[0]));
+	if (res <= 0){
+		perror("borrou-se");
+		exit(-1);
+	}
+	printf("Information sent: %d bytes written\n", res);
+	// Get Receiver READY
+	printf("Looking for receiver ready");
+	return 0;
+}
 
-  //Init the set buffer
+/**
+* Opens the connection.
+* Return: 0 if success, -1 if error.
+*/
+int llopen(){
+	unsigned char set[5];
+	int state = 0; // Used in the state machine to receive the UA.
+	int res; //Used to store the return of write() and read() calls.
+	//Init the set buffer
   set[0] = FLAG;
   set[1] = A;
   set[2] = C_SET;
   set[3] = set[1]^set[2];
   set[4] = FLAG;
 
-  //Open serial port device for reading and writing and not as controlling tty
-  //because we don't want to get killed if linenoise sends CTRL-C.
-
-  sp_fd = open(argv[1], O_RDWR | O_NOCTTY );
-  if (sp_fd <0) {
-    perror(argv[1]);
-    exit(-1);
-  }
-
-  //Load original termios
-  if ( tcgetattr(sp_fd,&old_tio) == -1) { /* save current port settings */
-    perror("tcgetattr");
-    exit(-1);
-  }
-
-  //Init input mode
-  bzero(&new_tio, sizeof(new_tio));
-  new_tio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-  new_tio.c_iflag = IGNPAR;
-  new_tio.c_oflag = 0;
-  new_tio.c_lflag = 0;
-  new_tio.c_cc[VTIME]    = 0;   /* inter-character timer unused */
-  new_tio.c_cc[VMIN]     = 0;   /* Polling Mode*/
-  tcflush(sp_fd, TCIOFLUSH);
-
-  //Set new termios
-  if ( tcsetattr(sp_fd,TCSANOW,&new_tio) == -1) {
-    perror("tcsetattr");
-    exit(-1);
-  }
-
-  while(conta < 4){
+	// Get an UA
+	while(conta < 4){
     if(flag){
        alarm(3);                 // activa alarme de 3s
        flag=0;
@@ -155,19 +152,71 @@ int main(int argc, char** argv)
             }
           }
         }
-
       }
       if (state == 5){
         printf("Acknowledge received\n");
-				break;
+				return 0;
       }
     }
- }
+	}
+	return -1;
+}
+
+int main(int argc, char** argv)
+{
+  struct termios old_tio, new_tio;
+
+  (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+
+  //Read command line arguments
+  if ( (argc < 2) ||
+  ((strcmp("/dev/ttyS0", argv[1])!=0) &&
+  (strcmp("/dev/ttyS1", argv[1])!=0) )) {
+    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+    exit(1);
+  }
 
 
+  //Open serial port device for reading and writing and not as controlling tty
+  //because we don't want to get killed if linenoise sends CTRL-C.
+
+  sp_fd = open(argv[1], O_RDWR | O_NOCTTY );
+  if (sp_fd <0) {
+    perror(argv[1]);
+    exit(-1);
+  }
+
+  //Load original termios
+  if ( tcgetattr(sp_fd,&old_tio) == -1) { /* save current port settings */
+    perror("tcgetattr");
+    exit(-1);
+  }
+
+  //Init input mode
+  bzero(&new_tio, sizeof(new_tio));
+  new_tio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+  new_tio.c_iflag = IGNPAR;
+  new_tio.c_oflag = 0;
+  new_tio.c_lflag = 0;
+  new_tio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+  new_tio.c_cc[VMIN]     = 0;   /* Polling Mode*/
+  tcflush(sp_fd, TCIOFLUSH);
+
+  //Set new termios
+  if ( tcsetattr(sp_fd,TCSANOW,&new_tio) == -1) {
+    perror("tcsetattr");
+    exit(-1);
+  }
+
+	if (llopen()){
+		perror("Error in llopen");
+	}
+	char* data = "teste";
+	llwrite(data);
 
   //Reset termios to the original
   if ( tcsetattr(sp_fd,TCSANOW,&old_tio) == -1) {
+		close(sp_fd);
     perror("tcsetattr");
     exit(-1);
   }
