@@ -148,7 +148,7 @@ int llwrite(int fileDescriptor, char* buffer, int length){
 	memcpy(&trama[4], buffer, length);
 	trama[length + 4] = bcc2;
 	trama[length + 5] = FLAG;
-	res = write(fileDescriptor,trama,sizeOfPacket));
+	res = write(fileDescriptor,trama,sizeOfPacket);
 	if (res <= 0){
 		perror("Error writing to serial port, exiting...");
 		exit(-1);
