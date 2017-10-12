@@ -86,7 +86,7 @@ int llread(int fd, char* trama) {
 		result = read(fd, &ch, 1);
 		if(result == 1){
 			trama[index++] = ch;
-			printf("Char: %x\n", ch);
+			printf("Char: %02x\n", ch);
 			if(ch == FLAG)
 				found_flag++;
 		} else {
@@ -148,7 +148,7 @@ int llwrite(int fileDescriptor, char* buffer, int length){
 	memcpy(&trama[4], buffer, length);
 	trama[length + 4] = bcc2;
 	trama[length + 5] = FLAG;
-	res = write(fileDescriptor,trama,sizeof(trama)/sizeof(trama[0]));
+	res = write(fileDescriptor,trama,sizeOfPacket));
 	if (res <= 0){
 		perror("Error writing to serial port, exiting...");
 		exit(-1);
