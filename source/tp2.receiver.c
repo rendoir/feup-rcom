@@ -31,7 +31,10 @@ int main(int argc, char** argv){
     because we don't want to get killed if linenoise sends CTRL-C.
    */
     sp_fd = open(serialName, O_RDWR | O_NOCTTY );
-    if (sp_fd <0) {perror(serialName); exit(-1); }
+    if (sp_fd < 0) {
+			perror(serialName);
+			exit(-1);
+		}
 
     if ( tcgetattr(sp_fd,&oldtio) == -1) { /* save current port settings */
       perror("tcgetattr");

@@ -165,6 +165,7 @@ int llwrite(int fileDescriptor, char* buffer, int length){
 int readControlPacket(int fileDescriptor, char expectedControlByte){
   //Read from serial port
   int state = 0;
+  flag = 0; // To enable the while loop to be performed
   int res;
   char read_char;
   char package_received[5];
@@ -234,8 +235,7 @@ int sendPacketAndWaitAcknowledge(int fileDescriptor, char* packet){
   conta = 1;
   while(conta < 4){
     if(flag){
-      alarm(3);                 // activa alarme de 3s
-      flag=0;
+      alarm(3);
       //Try to send message
       res = write(fileDescriptor, packet, 5);
       printf("Try number %d, %d bytes written\n", conta, res);
