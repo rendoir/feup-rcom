@@ -40,18 +40,30 @@ void atende()
 	flag=1;
 	conta++;
 }
+void insertValueAtPos(int pos, char value, char* array, int length){
+	int i;
+	for (i = length - 1; i >= pos ; i--){
+		array[i+1] = array[i];
+	}
+	array[pos] = value;
+}
+for (c = n - 1; c >= position - 1; c--)
+      array[c+1] = array[c];
+ 
+   array[position-1] = value;
 
 unsigned long writeCounter = 0;
 int llwrite(char* arrayToWrite){
 	// do stuffing here
 	int i, res;
+	char escapeChar = 0x7d;
 	char bcc2 = 0;
 	int arrayLength = sizeof(arrayToWrite) / sizeof(arrayToWrite[0]);
 	for (i = 0; i < arrayLength; i++){
-		if (arrayToWrite[i] == 0x7e){
-
-		}else if (arrayToWrite[i] == 0x7d){
-
+		if (arrayToWrite[i] == 0x7e || arrayToWrite[i] == 0x7d){
+			insertValueAtPos(i,escapeChar,arrayToWrite,arrayLength);
+			arrayLength++;
+			i++;
 		}
 		bcc2 = bcc2 ^ arrayToWrite[i];
 	}
