@@ -21,6 +21,9 @@ int main(int argc, char** argv)
   if(argv[1] != 0){
 		strcat(serialName, argv[1]);
 	}
+	else{
+		printf("Argv[1] is null\n");
+	}
   if ( (argc < 2) ||
   	     (strcmp("/dev/ttyS0", serialName) &&
   	      strcmp("/dev/ttyS1", serialName))){
@@ -31,9 +34,9 @@ int main(int argc, char** argv)
   //Open serial port device for reading and writing and not as controlling tty
   //because we don't want to get killed if linenoise sends CTRL-C.
 
-  sp_fd = open(argv[1], O_RDWR | O_NOCTTY );
+  sp_fd = open(serialName, O_RDWR | O_NOCTTY );
   if (sp_fd <0) {
-    perror(argv[1]);
+    perror(serialName);
     exit(-1);
   }
 
