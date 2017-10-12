@@ -45,6 +45,7 @@ void insertValueAtPos(int pos, char value, char* array, int length){
 * Return: 0 if success, -1 if error.
 */
 int llopen(int fileDescriptor, int caller){
+  printf("llopen called\n");
   if(caller == TRANSMITTER){
   	char set[5];
     buildControlPacket(C_SET, set);
@@ -167,6 +168,7 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
   int res;
   char read_char;
   char package_received[5];
+  printf("Reading Control Packet\n");
   while(state != 5 && flag == 0) {
    res = read(fileDescriptor, &read_char, 1);
    if (res > 0){

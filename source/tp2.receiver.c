@@ -42,10 +42,8 @@ int main(int argc, char** argv){
     newtio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
     newtio.c_iflag = IGNPAR;
     newtio.c_oflag = 0;
-
     /* set input mode (non-canonical, no echo,...) */
     newtio.c_lflag = 0;
-
     newtio.c_cc[VTIME]    = 0;   /* read time-out */
     newtio.c_cc[VMIN]     = 1;   /* number chars to read (blocking) */
 
@@ -55,8 +53,6 @@ int main(int argc, char** argv){
       perror("tcsetattr");
       exit(-1);
     }
-   	printf("Waiting for some read\n");
-
 		char* trama = malloc(1024 * sizeof(char));
 		llopen(sp_fd,RECEIVER);
 		llread(sp_fd, trama);
