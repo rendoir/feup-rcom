@@ -62,7 +62,7 @@ int llopen(int fileDescriptor, int caller){
     printf("Received SET\n");
     buildControlPacket(C_UA, g_ua);
   	printf("Sending UA\n");
-  	if(write(fileDescriptor, g_ua, CP_LENGTH)){
+  	if(write(fileDescriptor, g_ua, CP_LENGTH) <= 0){
       perror("Error sending UA");
       exit(-1);
     };
