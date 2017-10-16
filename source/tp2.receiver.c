@@ -2,7 +2,7 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <termios.h>
-#include "application.h"
+#include "dataLink.h"
 
 #define BAUDRATE B38400
 

@@ -3,7 +3,7 @@
 #include <fcntl.h>
 #include <termios.h>
 #include <signal.h>
-#include "application.h"
+#include "dataLink.h"
 
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
