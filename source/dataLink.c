@@ -7,6 +7,8 @@ unsigned long writeCounter = 0;
 // Flag used with the alarm and counter that keeps track of how much times the alarm has been activated
 int flag=1, alarm_tries=1;
 
+struct termios old_tio, new_tio;
+
 /**
 * Handles alarm
 */
@@ -53,74 +55,83 @@ void insertValueAtPos(size_t pos, char value, char* array, int length){
 }
 
 
+
 /*------------------------------------*/
 /*------------------------------------*/
-/*-------------LLCLOSE----------------*/
+/*------------SERIAL PORT-------------*/
 /*------------------------------------*/
 /*------------------------------------*/
 
-
-/**
-* Close the connection.
-* caller - Who called the function: RECEIVER or TRANSMITTER
-* Return: 0 if success, negative on error.
-*/
-int llclose(int fileDescriptor, int caller){
-  printf("\n<LLCLOSE>\n");
-  if (fileDescriptor < 0){
-    return -1;
+int init_inputMode(struct termios* new_tio, int caller){
+  //Init input mode
+  bzero(new_tio, sizeof(*new_tio));
+  new_tio->c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+  new_tio->c_iflag = IGNPAR;
+  new_tio->c_oflag = 0;
+  new_tio->c_lflag = 0;
+  if(caller == TRANSMITTER){
+    new_tio->c_cc[VTIME]    = 1;   /* inter-character timer unused */
+    new_tio->c_cc[VMIN]     = 0;   /* Polling Mode*/
   }
-
-  char disc_packet[5];
-  buildControlPacket(C_DISC,disc_packet);
-  if (caller == TRANSMITTER){
-    return llcloseTransmitter(&fileDescriptor, disc_packet);
-  } else if (caller == RECEIVER){
-    return llcloseReceiver(&fileDescriptor, disc_packet);
+  else if(caller == RECEIVER){
+    new_tio->c_cc[VTIME]    = 0;   /* read time-out */
+    new_tio->c_cc[VMIN]     = 1;   /* number chars to read (blocking) */
   }
-  return -1;
-}
-
-/**
-* Close the connection.
-* when caller is TRANSMITTER
-* Return: 0 if success, negative on error.
-*/
-int llcloseTransmitter(const int* fileDescriptor, char*  disc_packet){
-  if (sendPacketAndWaitResponse(*fileDescriptor, disc_packet,C_DISC) < 0){
-    perror("Could not establish connection, make sure the systems are connected\n");
-    return -2;
-  }
-  printf("    DISC Sent and DISC Received, Sending UA");
-
-  char ua_packet[5];
-  buildControlPacket(C_UA,ua_packet);
-
-  if (write(*fileDescriptor,ua_packet,CP_LENGTH) < 0){
-    perror("    Error sending UA");
-  }
-
-  printf("\n<LLCLOSE/>\n");
   return 0;
 }
 
-/**
-* Close the connection.
-* when caller is RECEIVER
-* Return: 0 if success, negative on error.
-*/
-int llcloseReceiver(const int* fileDescriptor, char* disc_packet){
-
-  if (readControlPacket(*fileDescriptor, C_DISC) != CP_LENGTH){
-    perror("Error reading DISC packet");
-    return -3;
+int serialPort_setNewSettigns(int sp_fd, int caller){
+  //Load original termios
+  if ( tcgetattr(sp_fd,&old_tio) == -1) { /* save current port settings */
+    perror("tcgetattr");
+    exit(-1);
   }
 
-  if (write(*fileDescriptor,disc_packet,CP_LENGTH) < 0){
-    perror("    Error sending disc packet");
+  init_inputMode(&new_tio, caller);
+  tcflush(sp_fd, TCIOFLUSH);
+
+  //Set new termios
+  if ( tcsetattr(sp_fd,TCSANOW,&new_tio) == -1) {
+    perror("tcsetattr");
+    exit(-1);
+  }
+  return 0;
+}
+
+int openSerialPort(int port, int caller){
+  //Read command line arguments
+  char serialName[255] = "/dev/ttyS";
+  char str_port[1];
+  sprintf(str_port, "%d", port);
+  strcat(serialName, str_port);
+
+  if (strcmp("/dev/ttyS0", serialName) && strcmp("/dev/ttyS1", serialName))
+  {
+    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
+    exit(1);
+  }
+  //Open serial port device for reading and writing and not as controlling tty
+  //because we don't want to get killed if linenoise sends CTRL-C.
+  int sp_fd; 
+  sp_fd = open(serialName, O_RDWR | O_NOCTTY );
+  if (sp_fd <0) {
+    perror(serialName);
+    exit(-1);
+  }
+  return sp_fd;
+}
+
+
+int closeSerialPort_and_SetOldSettigns(const int* sp_fd){
+  //Reset termios to the original
+  if ( tcsetattr(*sp_fd,TCSANOW,&old_tio) == -1) {
+		close(*sp_fd);
+    perror("tcsetattr");
+    exit(-1);
   }
 
-  printf("\n<LLCLOSE/>\n");
+  //Close serial port
+  close(*sp_fd);
   return 0;
 }
 
@@ -137,8 +148,11 @@ int llcloseReceiver(const int* fileDescriptor, char* disc_packet){
 * caller - Who called the function: RECEIVER or TRANSMITTER
 * Return: 0 if success, -1 if error.
 */
-int llopen(int fileDescriptor, int caller){
+int llopen(int port, int caller){
   printf("\n<LLOPEN>\n");
+  int fileDescriptor;
+  fileDescriptor = openSerialPort(port, caller);
+  serialPort_setNewSettigns(fileDescriptor, caller);
 
   if(fileDescriptor < 0)
     return -1;
@@ -187,77 +201,6 @@ int llopenReceiver(int fileDescriptor){
   }
   printf("    UA Sent\n");
   printf("\n<LLOPEN/>\n");
-  return 0;
-}
-
-
-/*------------------------------------*/
-/*------------------------------------*/
-/*--------------LLREAD----------------*/
-/*------------------------------------*/
-/*------------------------------------*/
-
-/**
-* A method to read from the file descriptor into the buffer (trama).
-*/
-int llread(int fd, char* trama) {
-  printf("<LLREAD>\n");
-
-  char ch;
-  int result;
-
-  //Read the whole trama (flag to flag)
-  printf("    Started reading trama\n");
-  int index = 0;
-  int found_flag = 0;
-  while(found_flag < 2) {
-    result = read(fd, &ch, 1);
-    if(result == 1){
-      trama[index++] = ch;
-      printf("    Char: %02x\n", ch);
-      if(ch == FLAG)
-        found_flag++;
-      } else
-          printf("    Failed to read\n");
-  }
-  printf("    Finished reading trama\n");
-
-  //Check BCC1
-  char address = trama[1];
-  char control = trama[2];
-  char bcc1 = trama[3];
-  if((address^control) != bcc1){
-    perror("BCC1 Incorrect parity");
-    return -1;
-  }
-
-  //Check BCC2 and unstuff
-  int size = index;
-  char expected_bcc2 = trama[size - 2];
-  char calculated_bcc2 = 0;
-  int i;
-  for(i = 4; i < size - 2; i++) {
-    calculated_bcc2 ^= trama[i];
-  }
-  if(expected_bcc2 != calculated_bcc2){
-    perror("BCC2 Incorrect parity");
-    return -2;
-  }
-
-  //Send receiver ready
-  char receiver_ready[5];
-  control = control << 1;
-  control = control ^ 0x80;
-  unsigned char recReadyByte = C_RR | control;
-  buildControlPacket(recReadyByte,receiver_ready);
-  printf("    Sending RR = 0x%02x\n", recReadyByte);
-  if(write(fd, receiver_ready, CP_LENGTH) <= 0){
-    perror("Error sending RR");
-    exit(-1);
-  }
-  printf("    RR Sent\n");
-
-  printf("<LLREAD/>\n");
   return 0;
 }
 
@@ -325,6 +268,152 @@ int llwrite(int fileDescriptor, char* buffer, unsigned size){
 }
 
 
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*--------------LLREAD----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+/**
+* A method to read from the file descriptor into the buffer (trama).
+*/
+int llread(int fd, char* trama) {
+  printf("<LLREAD>\n");
+
+  char ch;
+  int result;
+
+  //Read the whole trama (flag to flag)
+  printf("    Started reading trama\n");
+  int index = 0;
+  int found_flag = 0;
+  while(found_flag < 2) {
+    result = read(fd, &ch, 1);
+    if(result == 1){
+      trama[index++] = ch;
+      printf("    Char: %02x\n", ch);
+      if(ch == FLAG)
+        found_flag++;
+      } else
+          printf("    Failed to read\n");
+  }
+  printf("    Finished reading trama\n");
+
+  //Check BCC1
+  char address = trama[1];
+  char control = trama[2];
+  char bcc1 = trama[3];
+  if((address^control) != bcc1){
+    perror("BCC1 Incorrect parity");
+    return -1;
+  }
+
+  //Check BCC2 and unstuff
+  int size = index;
+  char expected_bcc2 = trama[size - 2];
+  char calculated_bcc2 = 0;
+  int i;
+  for(i = 4; i < size - 2; i++) {
+    calculated_bcc2 ^= trama[i];
+  }
+  if(expected_bcc2 != calculated_bcc2){
+    perror("BCC2 Incorrect parity");
+    return -2;
+  }
+
+  //Send receiver ready
+  char receiver_ready[5];
+  control = control << 1;
+  control = control ^ 0x80;
+  unsigned char recReadyByte = C_RR | control;
+  buildControlPacket(recReadyByte,receiver_ready);
+  printf("    Sending RR = 0x%02x\n", recReadyByte);
+  if(write(fd, receiver_ready, CP_LENGTH) <= 0){
+    perror("Error sending RR");
+    return -1;
+  }
+  printf("    RR Sent\n");
+
+  printf("<LLREAD/>\n");
+  return 0;
+}
+
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*-------------LLCLOSE----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+
+/**
+* Close the connection.
+* caller - Who called the function: RECEIVER or TRANSMITTER
+* Return: 0 if success, negative on error.
+*/
+int llclose(int fileDescriptor, int caller){
+  printf("\n<LLCLOSE>\n");
+  if (fileDescriptor < 0){
+    return -1;
+  }
+
+  char disc_packet[5];
+  buildControlPacket(C_DISC,disc_packet);
+  if (caller == TRANSMITTER){
+    return llcloseTransmitter(&fileDescriptor, disc_packet);
+  } else if (caller == RECEIVER){
+    return llcloseReceiver(&fileDescriptor, disc_packet);
+  }
+  return -1;
+}
+
+/**
+* Close the connection.
+* when caller is TRANSMITTER
+* Return: 0 if success, negative on error.
+*/
+int llcloseTransmitter(const int* fileDescriptor, char*  disc_packet){
+  if (sendPacketAndWaitResponse(*fileDescriptor, disc_packet,C_DISC) < 0){
+    perror("Could not establish connection, make sure the systems are connected\n");
+    return -2;
+  }
+  printf("    DISC Sent and DISC Received, Sending UA");
+
+  char ua_packet[5];
+  buildControlPacket(C_UA,ua_packet);
+
+  if (write(*fileDescriptor,ua_packet,CP_LENGTH) < 0){
+    perror("    Error sending UA");
+  }
+
+  printf("\n<LLCLOSE/>\n");
+  return 0;
+}
+
+/**
+* Close the connection.
+* when caller is RECEIVER
+* Return: 0 if success, negative on error.
+*/
+int llcloseReceiver(const int* fileDescriptor, char* disc_packet){
+
+  if (readControlPacket(*fileDescriptor, C_DISC) != CP_LENGTH){
+    perror("Error reading DISC packet");
+    return -3;
+  }
+
+  if (write(*fileDescriptor,disc_packet,CP_LENGTH) < 0){  
+    perror("    Error sending disc packet");
+  }
+
+  closeSerialPort_and_SetOldSettigns(fileDescriptor);
+
+  printf("\n<LLCLOSE/>\n");
+  return 0;
+}
+
+
 /**
 * Reads a control packet from the file descriptor and returns the current state.
 */
@@ -361,7 +450,6 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
 
   return -1;
 }
-
 
 /**
 * Sends a given packet and waits for a given response.
