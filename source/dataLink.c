@@ -49,6 +49,23 @@ void insertValueAtPos(int pos, char value, char* array, int length){
   array[pos] = value;
 }
 
+/*
+* Closes the connection sending a DISCONNECT packet.
+*/
+int llclose(int fileDescriptor, int caller){
+  printf("\n<LLCLOSE>\n");
+  if (fileDescriptor < 0){
+    return -1;
+  }
+  if (caller == TRANSMITTER){
+    char disc_packet[5];
+    buildControlPacket(C_DISC,disc_packet);
+    if (sendPacketAndWaitResponse(fileDescriptor, disc_packet,DISC);
+    
+  }
+  printf("\n<LLCLOSE/>\n");
+}
+
 /**
 * Opens/establish the connection.
 * caller - Who called the function: RECEIVER or TRANSMITTER
@@ -62,7 +79,7 @@ int llopen(int fileDescriptor, int caller){
   if(caller == TRANSMITTER){
     char set[5];
     buildControlPacket(C_SET, set);
-    if (sendPacketAndWaitAcknowledge(fileDescriptor, set) < 0){
+    if (sendPacketAndWaitResponse(fileDescriptor, set,C_UA) < 0){
       perror("Could not establish connection, make sure the systems are connected\n");
       return -2;
     }
@@ -137,9 +154,9 @@ int llread(int fd, char* trama) {
   char receiver_ready[5];
   control = control << 1;
   control = control ^ 0x80;
-  char recReadyByte = C_RR | control;
+  unsigned char recReadyByte = C_RR | control;
   buildControlPacket(recReadyByte,receiver_ready);
-  printf("    Sending RR = %02x\n", recReadyByte);
+  printf("    Sending RR = 0x%02x\n", recReadyByte);
   if(write(fd, receiver_ready, CP_LENGTH) <= 0){
     perror("Error sending RR");
     exit(-1);
@@ -262,9 +279,9 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
 
 
 /**
-* Sends a given packet and waits for unumberd acknowledge
+* Sends a given packet and waits for a given response.
 */
-int sendPacketAndWaitAcknowledge(int fileDescriptor, char* packet){
+int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte){
   int res; //Used to store the return of write() and read() calls.
   int state;
   alarm_tries = 1;
@@ -274,7 +291,7 @@ int sendPacketAndWaitAcknowledge(int fileDescriptor, char* packet){
       //Try to send message
       res = write(fileDescriptor, packet, 5);
       printf("Try number %d, %d bytes written\n", alarm_tries, res);
-      state = readControlPacket(fileDescriptor,C_UA);
+      state = readControlPacket(fileDescriptor,responseByte);
       if (state == 5){
         printf("Acknowledge received\n");
         return 0;

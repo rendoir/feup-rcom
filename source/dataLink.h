@@ -43,6 +43,11 @@ void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2);
 */
 void insertValueAtPos(int pos, char value, char* array, int length);
 
+/*
+* Closes the connection sending a DISCONNECT packet.
+*/
+int llclose(int fileDescriptor, int caller);
+
 /**
 * Opens/establish the connection.
 * caller - Who called the function: RECEIVER or TRANSMITTER
@@ -70,4 +75,4 @@ int readControlPacket(int fileDescriptor, char expectedControlByte);
 /**
 * Sends a given packet and waits for unumberd acknowledge
 */
-int sendPacketAndWaitAcknowledge(int fileDescriptor, char* packet);
+int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte);
