@@ -97,9 +97,9 @@ int llread(int fd, char* trama) {
 
 	//Check BCC1
 	char address = trama[1];
-	char controll = trama[2];
+	char control = trama[2];
 	char bcc1 = trama[3];
-	if((address^controll) != bcc1){
+	if((address^control) != bcc1){
 		perror("BCC1 Incorrect parity");
 		return -1;
 	}
@@ -116,7 +116,18 @@ int llread(int fd, char* trama) {
 		perror("BCC2 Incorrect parity");
 		return -1;
 	}
-
+	//Send receiver ready
+	char* receiver_ready = malloc(5* sizeof(char));
+	control = 1 << control;
+	control = control ^ 0x80;
+	char recReadyByte = C_RR | control;
+	buildControlPacket(recReadyByte,receiver_ready);
+	printf("Sending RR\n");
+	if(write(fileDescriptor, receiver_ready, CP_LENGTH) <= 0){
+		perror("Error sending RR");
+		exit(-1);
+	};
+	printf("RR Sent\n");
 	return 0;
 }
 
