@@ -154,7 +154,7 @@ int llwrite(int fileDescriptor, char* buffer, int length){
 	char* trama = malloc(sizeOfPacket);
 	trama[0] = FLAG;
 	trama[1] = A;
-	trama[2] = (char)(writeCounter++ % 2);
+	trama[2] = (char) 6 << (writeCounter++ % 2);
 	trama[3] = trama[1] ^ trama[2];
 	memcpy(&trama[4], buffer, length);
 	trama[length + 4] = bcc2;
@@ -167,6 +167,10 @@ int llwrite(int fileDescriptor, char* buffer, int length){
 	printf("Information sent: %d bytes written\n", res);
 	// Get Receiver READY
 	printf("Looking for receiver ready");
+	char control = 1 << trama[2];
+	control = control ^ 0x80;
+	char recReadyByte = C_RR | control;
+	readControlPacket(fileDescriptor, recReadyByte);
 	return 0;
 }
 
