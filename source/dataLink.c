@@ -7,7 +7,6 @@ unsigned long writeCounter = 0;
 // Flag used with the alarm and counter that keeps track of how much times the alarm has been activated
 int flag=1, alarm_tries=1;
 
-struct termios old_tio, new_tio;
 
 /**
 * Handles alarm
@@ -19,16 +18,18 @@ void alarm_handler()
   alarm_tries++;
 }
 
+
 /**
-* Makes a control/supervision packet with the given control byte/field.
+* Inserts a char in any given index of the array.
 */
-void buildControlPacket(char controlByte, char* packet){
-  packet[0] = FLAG;
-  packet[1] = A;
-  packet[2] = controlByte;
-  packet[3] = packet[1] ^ packet[2];
-  packet[4] = FLAG;
+void insertValueAtPos(size_t pos, char value, char* array, int length){
+  size_t i;
+  for (i = length - 1; i >= pos; i--){
+    array[i+1] = array[i];
+  }
+  array[pos] = value;
 }
+
 
 /**
  * Makes the Trama for sender/receiver
@@ -43,96 +44,77 @@ void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2){
   trama[length + 5] = FLAG;
 }
 
+/*------------------------------------*/
+/*------------------------------------*/
+/*-----------CONTROL PACKET-----------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
 /**
-* Inserts a char in any given index of the array.
+* Makes a control/supervision packet with the given control byte/field.
 */
-void insertValueAtPos(size_t pos, char value, char* array, int length){
-  size_t i;
-  for (i = length - 1; i >= pos; i--){
-    array[i+1] = array[i];
-  }
-  array[pos] = value;
+void buildControlPacket(char controlByte, char* packet){
+  packet[0] = FLAG;
+  packet[1] = A;
+  packet[2] = controlByte;
+  packet[3] = packet[1] ^ packet[2];
+  packet[4] = FLAG;
 }
 
+/**
+* Reads a control packet from the file descriptor and returns the current state.
+*/
+int readControlPacket(int fileDescriptor, char expectedControlByte){
+  //Read from serial port
+  flag = 0; // To enable the while loop to be performed
+  int res;
+  unsigned char read_char;
 
+  State_Machine sm;
+  unsigned char expected_flag[4];
+  expected_flag[0] = FLAG;
+  expected_flag[1] = A;
+  expected_flag[2] = expectedControlByte;
+  expected_flag[4] = FLAG;
+  init_State_Machine(&sm, expected_flag);
+  printf("Reading Control Packet\n");
 
-/*------------------------------------*/
-/*------------------------------------*/
-/*------------SERIAL PORT-------------*/
-/*------------------------------------*/
-/*------------------------------------*/
-
-int init_inputMode(struct termios* new_tio, int caller){
-  //Init input mode
-  bzero(new_tio, sizeof(*new_tio));
-  new_tio->c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-  new_tio->c_iflag = IGNPAR;
-  new_tio->c_oflag = 0;
-  new_tio->c_lflag = 0;
-  if(caller == TRANSMITTER){
-    new_tio->c_cc[VTIME]    = 1;   /* inter-character timer unused */
-    new_tio->c_cc[VMIN]     = 0;   /* Polling Mode*/
+  while(!endOfStateMachine(&sm) && flag == 0) {
+   res = read(fileDescriptor, &read_char, 1);
+   if (res > 0){
+     printf("current state = %d\n", sm.state_id);
+     printf("read byte: 0x%x\n", read_char);
+     
+     //State Machine
+     next_State(&sm, &read_char);
+   }
   }
-  else if(caller == RECEIVER){
-    new_tio->c_cc[VTIME]    = 0;   /* read time-out */
-    new_tio->c_cc[VMIN]     = 1;   /* number chars to read (blocking) */
+
+  if (endOfStateMachine(&sm)){
+    printf("Acknowledge received\n");
+    return 0;
   }
-  return 0;
+
+  return -1;
 }
 
-int serialPort_setNewSettigns(int sp_fd, int caller){
-  //Load original termios
-  if ( tcgetattr(sp_fd,&old_tio) == -1) { /* save current port settings */
-    perror("tcgetattr");
-    exit(-1);
+/**
+* Sends a given packet and waits for a given response.
+*/
+int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte){
+  int res; //Used to store the return of write() and read() calls.
+  alarm_tries = 1;
+  while(alarm_tries < MAX_TRIES){
+    if(flag){
+      alarm(TIME_OUT);
+      //Try to send message
+      res = write(fileDescriptor, packet, 5);
+      printf("Try number %d, %d bytes written\n", alarm_tries, res);
+      if(!readControlPacket(fileDescriptor,responseByte))
+        return 0;
+    }
   }
-
-  init_inputMode(&new_tio, caller);
-  tcflush(sp_fd, TCIOFLUSH);
-
-  //Set new termios
-  if ( tcsetattr(sp_fd,TCSANOW,&new_tio) == -1) {
-    perror("tcsetattr");
-    exit(-1);
-  }
-  return 0;
-}
-
-int openSerialPort(int port, int caller){
-  //Read command line arguments
-  char serialName[255] = "/dev/ttyS";
-  char str_port[1];
-  sprintf(str_port, "%d", port);
-  strcat(serialName, str_port);
-
-  if (strcmp("/dev/ttyS0", serialName) && strcmp("/dev/ttyS1", serialName))
-  {
-    printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-    exit(1);
-  }
-  //Open serial port device for reading and writing and not as controlling tty
-  //because we don't want to get killed if linenoise sends CTRL-C.
-  int sp_fd; 
-  sp_fd = open(serialName, O_RDWR | O_NOCTTY );
-  if (sp_fd <0) {
-    perror(serialName);
-    exit(-1);
-  }
-  return sp_fd;
-}
-
-
-int closeSerialPort_and_SetOldSettigns(const int* sp_fd){
-  //Reset termios to the original
-  if ( tcsetattr(*sp_fd,TCSANOW,&old_tio) == -1) {
-		close(*sp_fd);
-    perror("tcsetattr");
-    exit(-1);
-  }
-
-  //Close serial port
-  close(*sp_fd);
-  return 0;
+  return -1;
 }
 
 
@@ -411,61 +393,4 @@ int llcloseReceiver(const int* fileDescriptor, char* disc_packet){
 
   printf("\n<LLCLOSE/>\n");
   return 0;
-}
-
-
-/**
-* Reads a control packet from the file descriptor and returns the current state.
-*/
-int readControlPacket(int fileDescriptor, char expectedControlByte){
-  //Read from serial port
-  flag = 0; // To enable the while loop to be performed
-  int res;
-  unsigned char read_char;
-
-  State_Machine sm;
-  unsigned char expected_flag[4];
-  expected_flag[0] = FLAG;
-  expected_flag[1] = A;
-  expected_flag[2] = expectedControlByte;
-  expected_flag[4] = FLAG;
-  init_State_Machine(&sm, expected_flag);
-  printf("Reading Control Packet\n");
-
-  while(!endOfStateMachine(&sm) && flag == 0) {
-   res = read(fileDescriptor, &read_char, 1);
-   if (res > 0){
-     printf("current state = %d\n", sm.state_id);
-     printf("read byte: 0x%x\n", read_char);
-     
-     //State Machine
-     next_State(&sm, &read_char);
-   }
-  }
-
-  if (endOfStateMachine(&sm)){
-    printf("Acknowledge received\n");
-    return 0;
-  }
-
-  return -1;
-}
-
-/**
-* Sends a given packet and waits for a given response.
-*/
-int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte){
-  int res; //Used to store the return of write() and read() calls.
-  alarm_tries = 1;
-  while(alarm_tries < MAX_TRIES){
-    if(flag){
-      alarm(TIME_OUT);
-      //Try to send message
-      res = write(fileDescriptor, packet, 5);
-      printf("Try number %d, %d bytes written\n", alarm_tries, res);
-      if(!readControlPacket(fileDescriptor,responseByte))
-        return 0;
-    }
-  }
-  return -1;
 }

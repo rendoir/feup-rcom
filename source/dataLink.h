@@ -1,14 +1,5 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <termios.h>
-#include <fcntl.h>
 #include "state_machine.h"
-
-#define BAUDRATE B38400
-#define MODEMDEVICE "/dev/ttyS1"
-
+#include "serialPort.h"
 
 #define FLAG     0x7e // delimiter flag
 #define A        0X03 // address
@@ -20,7 +11,7 @@
 #define C_REJ	 0x01 // reject / negative acknowledge
 
 #define TRANSMITTER 0
-#define RECEIVER		1
+#define RECEIVER	1
 
 #define CP_LENGTH 5 // control packet length
 
@@ -36,36 +27,29 @@
 void alarm_handler();
 
 /**
-* Makes a control/supervision packet with the given control byte/field.
-*/
-void buildControlPacket(char controlByte, char* packet);
-
-/**
- * Makes the Trama for sender/receiver
- */
-void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2);
-
-/**
 * Inserts a char in any given index of the array.
 */
 void insertValueAtPos(size_t pos, char value, char* array, int length);
 
 /**
- * Init the struct termios to our inputMode,
- * depending on caller if is TRANSMITTER or RECEIVER
+ * Makes the Trama for sender/receiver
  */
+ void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2);
  
-int init_inputMode(struct termios* new_tio, int caller);
+/**
+* Makes a control/supervision packet with the given control byte/field.
+*/
+void buildControlPacket(char controlByte, char* packet);
 
+/**
+* Reads a control packet from the file descriptor and returns the current state.
+*/
+int readControlPacket(int fileDescriptor, char expectedControlByte);
 
-//TODO: comment
-int serialPort_setNewSettigns(int sp_fd, int caller);
-
-//TODO: comment
-int openSerialPort(int port, int caller);
-
-//TODO: comment
-int closeSerialPort_and_SetOldSettigns(const int* sp_fd);
+/**
+* Sends a given packet and waits for unumberd acknowledge
+*/
+int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte);
 
 /**
 * Opens/establish the connection.
@@ -125,13 +109,3 @@ int llcloseTransmitter(const int* fileDescriptor, char* disc_packet);
 * Return: 0 if success, negative on error.
 */
 int llcloseReceiver(const int* fileDescriptor, char* disc_packet);
-
-/**
-* Reads a control packet from the file descriptor and returns the current state.
-*/
-int readControlPacket(int fileDescriptor, char expectedControlByte);
-
-/**
-* Sends a given packet and waits for unumberd acknowledge
-*/
-int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte);
