@@ -8,137 +8,146 @@ unsigned long writeCounter = 0;
 int flag=1, alarm_tries=1;
 
 /**
-* Atende Alarme
+* Handles alarm
 */
 void alarm_handler()
 {
-	printf("Alarm # %d\n", alarm_tries);
-	flag=1;
-	alarm_tries++;
+  printf("    Alarm #%d\n", alarm_tries);
+  flag=1;
+  alarm_tries++;
 }
 
 /**
 * Makes a control/supervision packet with the given control byte/field.
 */
 void buildControlPacket(char controlByte, char* packet){
-	packet[0] = FLAG;
-	packet[1] = A;
-	packet[2] = controlByte;
-	packet[3] = packet[1] ^ packet[2];
-	packet[4] = FLAG;
+  packet[0] = FLAG;
+  packet[1] = A;
+  packet[2] = controlByte;
+  packet[3] = packet[1] ^ packet[2];
+  packet[4] = FLAG;
 }
 
 void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2){
-	trama[0] = FLAG;
-	trama[1] = A;
-	trama[2] = (char)(writeCounter++ % 2) << 6;
-	trama[3] = trama[1] ^ trama[2];
-	memcpy(&trama[4], buffer, length);
-	trama[length + 4] = bcc2;
-	trama[length + 5] = FLAG;
+  trama[0] = FLAG;
+  trama[1] = A;
+  trama[2] = (char)(writeCounter++ % 2) << 6;
+  trama[3] = trama[1] ^ trama[2];
+  memcpy(&trama[4], buffer, length);
+  trama[length + 4] = bcc2;
+  trama[length + 5] = FLAG;
 }
 
 /**
 * Inserts a char in any given index of the array.
 */
 void insertValueAtPos(int pos, char value, char* array, int length){
-	int i;
-	for (i = length - 1; i >= pos ; i--){
-		array[i+1] = array[i];
-	}
-	array[pos] = value;
+  int i;
+  for (i = length - 1; i >= pos; i--){
+    array[i+1] = array[i];
+  }
+  array[pos] = value;
 }
 
 /**
 * Opens/establish the connection.
 * caller - Who called the function: RECEIVER or TRANSMITTER
-* Return: 0 if success, -1 if error.
+* Return: 0 if success, negative on error.
 */
 int llopen(int fileDescriptor, int caller){
-  printf("llopen called\n");
+  printf("\n<LLOPEN>\n");
+  
+  if(fileDescriptor < 0) 
+    return -1;
   if(caller == TRANSMITTER){
-  	char set[5];
+    char set[5];
     buildControlPacket(C_SET, set);
-  	if (sendPacketAndWaitAcknowledge(fileDescriptor, set) == -1){
-  		perror("Could not establish connection, make sure the systems are connected\n");
-  		exit(-1);
-  	}
-  }else if (caller == RECEIVER){
-    char g_ua[CP_LENGTH];
-    if (readControlPacket(fileDescriptor,C_SET) != CP_LENGTH){
-      perror("Error reading SET packet");
-      exit(-1);
+    if (sendPacketAndWaitAcknowledge(fileDescriptor, set) < 0){
+      perror("Could not establish connection, make sure the systems are connected\n");
+      return -2;
     }
-    printf("Received SET\n");
+    printf("    SET Sent and UA Received");
+  } else if (caller == RECEIVER){
+    char g_ua[CP_LENGTH];
+    if (readControlPacket(fileDescriptor, C_SET) != CP_LENGTH){
+      perror("Error reading SET packet");
+      return -3;
+    }
+    printf("    Received SET\n");
     buildControlPacket(C_UA, g_ua);
-  	printf("Sending UA\n");
-  	if(write(fileDescriptor, g_ua, CP_LENGTH) <= 0){
+    printf("    Sending UA\n");
+    if(write(fileDescriptor, g_ua, CP_LENGTH) != CP_LENGTH){
       perror("Error sending UA");
-      exit(-1);
-    };
-    printf("UA Sent\n");
+      return -4;
+    }
+    printf("    UA Sent\n");
   }
-	return 0;
+  printf("<LLOPEN/>\n");
+  return 0;
 }
 
 /**
 * A method to read from the file descriptor into the buffer (trama).
 */
 int llread(int fd, char* trama) {
-	char ch;
-	int result;
+  printf("<LLREAD>\n");
 
-	//Read the whole trama
-	printf("Started reading trama\n");
-	int index = 0;
-	int found_flag = 0;
-	while(found_flag < 2) {
-		result = read(fd, &ch, 1);
-		if(result == 1){
-			trama[index++] = ch;
-			printf("Char: %02x\n", ch);
-			if(ch == FLAG)
-				found_flag++;
-		} else {
-			printf("Failed to read\n");
-		}
-	}
-	printf("Finished reading trama\n");
+  char ch;
+  int result;
+  
+  //Read the whole trama (flag to flag)
+  printf("    Started reading trama\n");
+  int index = 0;
+  int found_flag = 0;
+  while(found_flag < 2) {
+    result = read(fd, &ch, 1);
+    if(result == 1){
+      trama[index++] = ch;
+      printf("    Char: %02x\n", ch);
+      if(ch == FLAG)
+        found_flag++;
+      } else 
+          printf("    Failed to read\n");
+  }
+  printf("    Finished reading trama\n");
 
-	//Check BCC1
-	char address = trama[1];
-	char control = trama[2];
-	char bcc1 = trama[3];
-	if((address^control) != bcc1){
-		perror("BCC1 Incorrect parity");
-		return -1;
-	}
+  //Check BCC1
+  char address = trama[1];
+  char control = trama[2];
+  char bcc1 = trama[3];
+  if((address^control) != bcc1){
+    perror("BCC1 Incorrect parity");
+    return -1;
+  }
 
-	//Check BCC2 and unstuff
-	int size = index;
-	char expected_bcc2 = trama[size - 2];
-	char calculated_bcc2 = 0;
-	int i;
-	for(i = 4; i < size - 2; i++) {
-		calculated_bcc2 ^= trama[i];
-	}
-	if(expected_bcc2 != calculated_bcc2){
-		perror("BCC2 Incorrect parity");
-		return -1;
-	}
-	//Send receiver ready
-	char receiver_ready[5];
-	control = control << 1;
-	control = control ^ 0x80;
-	char recReadyByte = C_RR | control;
-	buildControlPacket(recReadyByte,receiver_ready);
-	printf("Sending RR\n");
-	if(write(fd, receiver_ready, CP_LENGTH) <= 0){
-		perror("Error sending RR");
-		exit(-1);
-	};
-	printf("RR Sent\n");
-	return 0;
+  //Check BCC2 and unstuff
+  int size = index;
+  char expected_bcc2 = trama[size - 2];
+  char calculated_bcc2 = 0;
+  int i;
+  for(i = 4; i < size - 2; i++) {
+    calculated_bcc2 ^= trama[i];
+  }
+  if(expected_bcc2 != calculated_bcc2){
+    perror("BCC2 Incorrect parity");
+    return -2;
+  }
+
+  //Send receiver ready
+  char receiver_ready[5];
+  control = control << 1;
+  control = control ^ 0x80;
+  char recReadyByte = C_RR | control;
+  buildControlPacket(recReadyByte,receiver_ready);
+  printf("    Sending RR = %02x\n", recReadyByte);
+  if(write(fd, receiver_ready, CP_LENGTH) <= 0){
+    perror("Error sending RR");
+    exit(-1);
+  }
+  printf("    RR Sent\n");
+  
+  printf("<LLREAD/>\n");
+  return 0;
 }
 
 /**
@@ -147,35 +156,42 @@ int llread(int fd, char* trama) {
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
 int llwrite(int fileDescriptor, char* buffer, unsigned size){
-	int i, res;
-	char bcc2 = 0;
-	for (i = 0; i < size; i++){
+  printf("<LLWRITE>\n");
+  int i, res;
+  char bcc2 = 0;
+  for (i = 0; i < size; i++){
     bcc2 = bcc2 ^ buffer[i];
-		if (buffer[i] == 0x7e || buffer[i] == 0x7d){
-			insertValueAtPos(i,ESCAPE_CHAR,buffer,size);
-			size++;
-			i++;
-			buffer[i] = buffer[i] ^ 0x20;
-			printf("Escaped char!\n");
-		}
-	}
-	printf("BCC and byte stuffing complete\n");
+    if (buffer[i] == 0x7e || buffer[i] == 0x7d){
+      insertValueAtPos(i, ESCAPE_CHAR, buffer, size);
+      size++;
+      i++;
+      buffer[i] = buffer[i] ^ 0x20;
+      printf("    Escaped char\n");
+    }
+  }
+  printf("    BCC and byte stuffing complete\n");
   int sizeOfPacket = (size + 6) * sizeof(char);
-	char* trama = malloc(sizeOfPacket);
-	buildTrama(trama, buffer, size, bcc2);
-	res = write(fileDescriptor,trama,sizeOfPacket);
-	if (res <= 0){
-		perror("Error writing to serial port, exiting...");
-		exit(-1);
-	}
-	printf("Information sent: %d bytes written\n", res);
-	// Get Receiver READY
-	printf("Looking for receiver ready");
-	char control = trama[2] << 1;
-	control = control ^ 0x80;
-	char recReadyByte = C_RR | control;
-	readControlPacket(fileDescriptor, recReadyByte);
-	return 0;
+  char* trama = malloc(sizeOfPacket);
+  buildTrama(trama, buffer, size, bcc2);
+  res = write(fileDescriptor, trama, sizeOfPacket);
+  if (res <= 0){
+    perror("Error writing to serial port");
+    return -1;
+  }
+  printf("    Information sent: %d bytes written\n", res);
+  // Get Receiver Ready
+  printf("    Looking for receiver ready");
+  char control = trama[2] << 1;
+  control = control ^ 0x80;
+  char recReadyByte = C_RR | control;
+  if(readControlPacket(fileDescriptor, recReadyByte) < 0){
+    printf("    Receiver ready not received");
+    return -1;
+  } else 
+    printf("    Receiver ready received");
+
+  printf("<LLWRITE/>\n");	
+  return 0;
 }
 
 /**

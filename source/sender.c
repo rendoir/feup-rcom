@@ -12,28 +12,27 @@
 int main(int argc, char** argv)
 {
 
-	int sp_fd; // File descriptor used to write and read through serial port.
+  int sp_fd; // Serial port file descriptor
   struct termios old_tio, new_tio;
-  (void) signal(SIGALRM, alarm_handler);  // instala  rotina que atende interrupcao
+  signal(SIGALRM, alarm_handler);  // Install alarm handler
 
   //Read command line arguments
-	char serialName[255] = "/dev/ttyS";
+  char serialName[255] = "/dev/ttyS";
   if(argv[1] != 0){
-		strcat(serialName, argv[1]);
-	}
-	else{
-		printf("Argv[1] is null\n");
-	}
+    strcat(serialName, argv[1]);
+  }
+  else{
+    printf("Argv[1] is null\n");
+  }
   if ( (argc < 2) ||
   	     (strcmp("/dev/ttyS0", serialName) &&
   	      strcmp("/dev/ttyS1", serialName))){
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
       exit(1);
-    }
+  }
 
   //Open serial port device for reading and writing and not as controlling tty
   //because we don't want to get killed if linenoise sends CTRL-C.
-
   sp_fd = open(serialName, O_RDWR | O_NOCTTY );
   if (sp_fd <0) {
     perror(serialName);
