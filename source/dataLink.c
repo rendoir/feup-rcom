@@ -123,7 +123,7 @@ int llread(int fd, char* trama) {
 	char recReadyByte = C_RR | control;
 	buildControlPacket(recReadyByte,receiver_ready);
 	printf("Sending RR\n");
-	if(write(fileDescriptor, receiver_ready, CP_LENGTH) <= 0){
+	if(write(fd, receiver_ready, CP_LENGTH) <= 0){
 		perror("Error sending RR");
 		exit(-1);
 	};
