@@ -1,6 +1,8 @@
+#ifndef FILE_H_
+#define FILE_H_
+
 #include <stdlib.h>
 #include <string.h>
-
 
 typedef struct Files{
   char name[128];
@@ -9,7 +11,7 @@ typedef struct Files{
   char *bytes;
 } File;
 
-int makefile (File* file,const char* name,const char* type,const void* bytes){
+int create_file (File* file,const char* name,const char* type,const void* bytes){
    file = malloc(sizeof(File));
    if(file ==  NULL)
     return 1;
@@ -23,3 +25,5 @@ int makefile (File* file,const char* name,const char* type,const void* bytes){
    memcpy(file->bytes, bytes, file->length);
    return 0;
 }
+
+#endif
