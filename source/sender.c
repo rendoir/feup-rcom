@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
 	int sp_fd; // File descriptor used to write and read through serial port.
   struct termios old_tio, new_tio;
-  (void) signal(SIGALRM, atende);  // instala  rotina que atende interrupcao
+  (void) signal(SIGALRM, alarm_handler);  // instala  rotina que atende interrupcao
 
   //Read command line arguments
 	char serialName[255] = "/dev/ttyS";

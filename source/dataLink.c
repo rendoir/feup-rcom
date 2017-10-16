@@ -5,16 +5,16 @@
 unsigned long writeCounter = 0;
 
 // Flag used with the alarm and counter that keeps track of how much times the alarm has been activated
-int flag=1, conta=1;
+int flag=1, alarm_tries=1;
 
 /**
 * Atende Alarme
 */
-void atende()
+void alarm_handler()
 {
-	printf("alarme # %d\n", conta);
+	printf("Alarm # %d\n", alarm_tries);
 	flag=1;
-	conta++;
+	alarm_tries++;
 }
 
 /**
@@ -26,6 +26,16 @@ void buildControlPacket(char controlByte, char* packet){
 	packet[2] = controlByte;
 	packet[3] = packet[1] ^ packet[2];
 	packet[4] = FLAG;
+}
+
+void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2){
+	trama[0] = FLAG;
+	trama[1] = A;
+	trama[2] = (char)(writeCounter++ % 2) << 6;
+	trama[3] = trama[1] ^ trama[2];
+	memcpy(&trama[4], buffer, length);
+	trama[length + 4] = bcc2;
+	trama[length + 5] = FLAG;
 }
 
 /**
@@ -117,7 +127,7 @@ int llread(int fd, char* trama) {
 		return -1;
 	}
 	//Send receiver ready
-	char* receiver_ready = malloc(5* sizeof(char));
+	char receiver_ready[5];
 	control = control << 1;
 	control = control ^ 0x80;
 	char recReadyByte = C_RR | control;
@@ -136,29 +146,23 @@ int llread(int fd, char* trama) {
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char* buffer, int length){
+int llwrite(int fileDescriptor, char* buffer, unsigned size){
 	int i, res;
 	char bcc2 = 0;
-	for (i = 0; i < length; i++){
+	for (i = 0; i < size; i++){
     bcc2 = bcc2 ^ buffer[i];
 		if (buffer[i] == 0x7e || buffer[i] == 0x7d){
-			insertValueAtPos(i,ESCAPE_CHAR,buffer,length);
-			length++;
+			insertValueAtPos(i,ESCAPE_CHAR,buffer,size);
+			size++;
 			i++;
 			buffer[i] = buffer[i] ^ 0x20;
 			printf("Escaped char!\n");
 		}
 	}
 	printf("BCC and byte stuffing complete\n");
-  int sizeOfPacket = (length + 6) * sizeof(char);
+  int sizeOfPacket = (size + 6) * sizeof(char);
 	char* trama = malloc(sizeOfPacket);
-	trama[0] = FLAG;
-	trama[1] = A;
-	trama[2] = (char)(writeCounter++ % 2) << 6;
-	trama[3] = trama[1] ^ trama[2];
-	memcpy(&trama[4], buffer, length);
-	trama[length + 4] = bcc2;
-	trama[length + 5] = FLAG;
+	buildTrama(trama, buffer, size, bcc2);
 	res = write(fileDescriptor,trama,sizeOfPacket);
 	if (res <= 0){
 		perror("Error writing to serial port, exiting...");
@@ -182,8 +186,8 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
   int state = 0;
   flag = 0; // To enable the while loop to be performed
   int res;
-  char read_char;
-  char package_received[5];
+  unsigned char read_char;
+  unsigned char package_received[5];
   printf("Reading Control Packet\n");
   while(state != 5 && flag == 0) {
    res = read(fileDescriptor, &read_char, 1);
@@ -247,13 +251,13 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
 int sendPacketAndWaitAcknowledge(int fileDescriptor, char* packet){
   int res; //Used to store the return of write() and read() calls.
   int state;
-  conta = 1;
-  while(conta < 4){
+  alarm_tries = 1;
+  while(alarm_tries < MAX_TRIES){
     if(flag){
-      alarm(3);
+      alarm(TIME_OUT);
       //Try to send message
       res = write(fileDescriptor, packet, 5);
-      printf("Try number %d, %d bytes written\n", conta, res);
+      printf("Try number %d, %d bytes written\n", alarm_tries, res);
       state = readControlPacket(fileDescriptor,C_UA);
       if (state == 5){
         printf("Acknowledge received\n");

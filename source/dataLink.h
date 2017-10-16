@@ -19,15 +19,24 @@
 
 #define ESCAPE_CHAR 0x7d
 
+#define TIME_OUT 3
+#define MAX_TRIES 4
+
+
 /**
 * Atende Alarme
 */
-void atende();
+void alarm_handler();
 
 /**
 * Makes a control/supervision packet with the given control byte/field.
 */
 void buildControlPacket(char controlByte, char* packet);
+
+/**
+ * Makes the Trama for sender/receiver
+ */
+void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2);
 
 /**
 * Inserts a char in any given index of the array.
@@ -51,7 +60,7 @@ int llread(int fd, char* trama);
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char* buffer, int length);
+int llwrite(int fileDescriptor, char* buffer, unsigned length);
 
 /**
 * Reads a control packet from the file descriptor and returns the current state.
