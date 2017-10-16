@@ -70,6 +70,7 @@ int main(int argc, char** argv)
 		perror("Error writing data to serial port");
 		exit(-1);
 	}
+  llclose(sp_fd,TRANSMITTER);
 
   //Reset termios to the original
   if ( tcsetattr(sp_fd,TCSANOW,&old_tio) == -1) {

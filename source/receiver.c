@@ -59,6 +59,7 @@ int main(int argc, char** argv){
 		char* trama = malloc(1024 * sizeof(char));
 		llopen(sp_fd,RECEIVER);
 		llread(sp_fd, trama);
+		llclose(sp_fd,RECEIVER);
 
 		return 0;
 }

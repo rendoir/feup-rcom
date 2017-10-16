@@ -57,13 +57,30 @@ int llclose(int fileDescriptor, int caller){
   if (fileDescriptor < 0){
     return -1;
   }
+  char disc_packet[5];
+  buildControlPacket(C_DISC,disc_packet);
   if (caller == TRANSMITTER){
-    char disc_packet[5];
-    buildControlPacket(C_DISC,disc_packet);
-    if (sendPacketAndWaitResponse(fileDescriptor, disc_packet,DISC);
-    
+    if (sendPacketAndWaitResponse(fileDescriptor, disc_packet,C_DISC) < 0){
+      perror("Could not establish connection, make sure the systems are connected\n");
+      return -2;
+    }
+    printf("    DISC Sent and DISC Received, Sending UA");
+    char ua_packet[5];
+    buildControlPacket(C_UA,ua_packet);
+    if (write(fileDescriptor,ua_packet,CP_LENGTH) < 0){
+      perror("    Error sending UA");
+    }
+  } else if (caller == RECEIVER){
+      if (readControlPacket(fileDescriptor, C_DISC) != CP_LENGTH){
+        perror("Error reading DISC packet");
+        return -3;
+      }
+      if (write(fileDescriptor,disc_packet,CP_LENGTH) < 0){
+        perror("    Error sending disc packet");
+      }
   }
   printf("\n<LLCLOSE/>\n");
+  return 0;
 }
 
 /**
@@ -73,8 +90,8 @@ int llclose(int fileDescriptor, int caller){
 */
 int llopen(int fileDescriptor, int caller){
   printf("\n<LLOPEN>\n");
-  
-  if(fileDescriptor < 0) 
+
+  if(fileDescriptor < 0)
     return -1;
   if(caller == TRANSMITTER){
     char set[5];
@@ -111,7 +128,7 @@ int llread(int fd, char* trama) {
 
   char ch;
   int result;
-  
+
   //Read the whole trama (flag to flag)
   printf("    Started reading trama\n");
   int index = 0;
@@ -123,7 +140,7 @@ int llread(int fd, char* trama) {
       printf("    Char: %02x\n", ch);
       if(ch == FLAG)
         found_flag++;
-      } else 
+      } else
           printf("    Failed to read\n");
   }
   printf("    Finished reading trama\n");
@@ -162,7 +179,7 @@ int llread(int fd, char* trama) {
     exit(-1);
   }
   printf("    RR Sent\n");
-  
+
   printf("<LLREAD/>\n");
   return 0;
 }
@@ -204,10 +221,10 @@ int llwrite(int fileDescriptor, char* buffer, unsigned size){
   if(readControlPacket(fileDescriptor, recReadyByte) < 0){
     printf("    Receiver ready not received");
     return -1;
-  } else 
+  } else
     printf("    Receiver ready received");
 
-  printf("<LLWRITE/>\n");	
+  printf("<LLWRITE/>\n");
   return 0;
 }
 
