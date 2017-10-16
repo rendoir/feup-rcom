@@ -28,6 +28,9 @@ void buildControlPacket(char controlByte, char* packet){
   packet[4] = FLAG;
 }
 
+/**
+ * Makes the Trama for sender/receiver
+ */
 void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2){
   trama[0] = FLAG;
   trama[1] = A;
@@ -41,52 +44,98 @@ void buildTrama(char* trama, char* buffer, unsigned length, unsigned char bcc2){
 /**
 * Inserts a char in any given index of the array.
 */
-void insertValueAtPos(int pos, char value, char* array, int length){
-  int i;
+void insertValueAtPos(size_t pos, char value, char* array, int length){
+  size_t i;
   for (i = length - 1; i >= pos; i--){
     array[i+1] = array[i];
   }
   array[pos] = value;
 }
 
-/*
-* Closes the connection sending a DISCONNECT packet.
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*-------------LLCLOSE----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+
+/**
+* Close the connection.
+* caller - Who called the function: RECEIVER or TRANSMITTER
+* Return: 0 if success, negative on error.
 */
 int llclose(int fileDescriptor, int caller){
   printf("\n<LLCLOSE>\n");
   if (fileDescriptor < 0){
     return -1;
   }
+
   char disc_packet[5];
   buildControlPacket(C_DISC,disc_packet);
   if (caller == TRANSMITTER){
-    if (sendPacketAndWaitResponse(fileDescriptor, disc_packet,C_DISC) < 0){
-      perror("Could not establish connection, make sure the systems are connected\n");
-      return -2;
-    }
-    printf("    DISC Sent and DISC Received, Sending UA");
-    char ua_packet[5];
-    buildControlPacket(C_UA,ua_packet);
-    if (write(fileDescriptor,ua_packet,CP_LENGTH) < 0){
-      perror("    Error sending UA");
-    }
+    return llcloseTransmitter(&fileDescriptor, disc_packet);
   } else if (caller == RECEIVER){
-      if (readControlPacket(fileDescriptor, C_DISC) != CP_LENGTH){
-        perror("Error reading DISC packet");
-        return -3;
-      }
-      if (write(fileDescriptor,disc_packet,CP_LENGTH) < 0){
-        perror("    Error sending disc packet");
-      }
+    return llcloseReceiver(&fileDescriptor, disc_packet);
   }
+  return -1;
+}
+
+/**
+* Close the connection.
+* when caller is TRANSMITTER
+* Return: 0 if success, negative on error.
+*/
+int llcloseTransmitter(const int* fileDescriptor, char*  disc_packet){
+  if (sendPacketAndWaitResponse(*fileDescriptor, disc_packet,C_DISC) < 0){
+    perror("Could not establish connection, make sure the systems are connected\n");
+    return -2;
+  }
+  printf("    DISC Sent and DISC Received, Sending UA");
+
+  char ua_packet[5];
+  buildControlPacket(C_UA,ua_packet);
+
+  if (write(*fileDescriptor,ua_packet,CP_LENGTH) < 0){
+    perror("    Error sending UA");
+  }
+
   printf("\n<LLCLOSE/>\n");
   return 0;
 }
 
 /**
+* Close the connection.
+* when caller is RECEIVER
+* Return: 0 if success, negative on error.
+*/
+int llcloseReceiver(const int* fileDescriptor, char* disc_packet){
+
+  if (readControlPacket(*fileDescriptor, C_DISC) != CP_LENGTH){
+    perror("Error reading DISC packet");
+    return -3;
+  }
+
+  if (write(*fileDescriptor,disc_packet,CP_LENGTH) < 0){
+    perror("    Error sending disc packet");
+  }
+
+  printf("\n<LLCLOSE/>\n");
+  return 0;
+}
+
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*--------------LLOPEN----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+
+/**
 * Opens/establish the connection.
 * caller - Who called the function: RECEIVER or TRANSMITTER
-* Return: 0 if success, negative on error.
+* Return: 0 if success, -1 if error.
 */
 int llopen(int fileDescriptor, int caller){
   printf("\n<LLOPEN>\n");
@@ -94,31 +143,59 @@ int llopen(int fileDescriptor, int caller){
   if(fileDescriptor < 0)
     return -1;
   if(caller == TRANSMITTER){
-    char set[5];
-    buildControlPacket(C_SET, set);
-    if (sendPacketAndWaitResponse(fileDescriptor, set,C_UA) < 0){
-      perror("Could not establish connection, make sure the systems are connected\n");
-      return -2;
-    }
-    printf("    SET Sent and UA Received");
+    return llopenTrasnmitter(fileDescriptor);
   } else if (caller == RECEIVER){
-    char g_ua[CP_LENGTH];
-    if (readControlPacket(fileDescriptor, C_SET) != CP_LENGTH){
-      perror("Error reading SET packet");
-      return -3;
-    }
-    printf("    Received SET\n");
-    buildControlPacket(C_UA, g_ua);
-    printf("    Sending UA\n");
-    if(write(fileDescriptor, g_ua, CP_LENGTH) != CP_LENGTH){
-      perror("Error sending UA");
-      return -4;
-    }
-    printf("    UA Sent\n");
+    return llopenReceiver(fileDescriptor);
   }
-  printf("<LLOPEN/>\n");
+  return -1;
+}
+
+/**
+* Opens/establish the connection.
+* when caller is TRANSMITTER
+* Return: 0 if success, negative on error.
+*/
+int llopenTrasnmitter(int fileDescriptor){
+  char set[5];
+  buildControlPacket(C_SET, set);
+  if (sendPacketAndWaitResponse(fileDescriptor, set,C_UA) < 0){
+    perror("Could not establish connection, make sure the systems are connected\n");
+    return -2;
+  }
+  printf("    SET Sent and UA Received");
+  printf("\n<LLOPEN/>\n");
   return 0;
 }
+
+/**
+* Opens/establish the connection.
+* when caller is RECEIVER
+* Return: 0 if success, negative on error.
+*/
+int llopenReceiver(int fileDescriptor){
+  char g_ua[CP_LENGTH];
+  if (readControlPacket(fileDescriptor, C_SET) != CP_LENGTH){
+    perror("Error reading SET packet");
+    return -3;
+  }
+  printf("    Received SET\n");
+  buildControlPacket(C_UA, g_ua);
+  printf("    Sending UA\n");
+  if(write(fileDescriptor, g_ua, CP_LENGTH) != CP_LENGTH){
+    perror("Error sending UA");
+    return -4;
+  }
+  printf("    UA Sent\n");
+  printf("\n<LLOPEN/>\n");
+  return 0;
+}
+
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*--------------LLREAD----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
 
 /**
 * A method to read from the file descriptor into the buffer (trama).
@@ -184,6 +261,29 @@ int llread(int fd, char* trama) {
   return 0;
 }
 
+
+/*------------------------------------*/
+/*------------------------------------*/
+/*-------------LLWRITE----------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+int stuffingBuffer(char* buffer, unsigned* size, char* bcc2){
+  size_t i;
+  for (i = 0; i < *size; i++){
+    *bcc2 = *bcc2 ^ buffer[i];
+    if (buffer[i] == 0x7e || buffer[i] == 0x7d){
+      insertValueAtPos(i, ESCAPE_CHAR, buffer, *size);
+      (*size)++;
+      i++;
+      buffer[i] = buffer[i] ^ 0x20;
+      printf("    Escaped char\n");
+    }
+  }
+  return 0;
+}
+
+
 /**
 * Writes a buffer array to the fileDescriptor.
 * length - Length of the array to send
@@ -191,28 +291,25 @@ int llread(int fd, char* trama) {
 */
 int llwrite(int fileDescriptor, char* buffer, unsigned size){
   printf("<LLWRITE>\n");
-  int i, res;
   char bcc2 = 0;
-  for (i = 0; i < size; i++){
-    bcc2 = bcc2 ^ buffer[i];
-    if (buffer[i] == 0x7e || buffer[i] == 0x7d){
-      insertValueAtPos(i, ESCAPE_CHAR, buffer, size);
-      size++;
-      i++;
-      buffer[i] = buffer[i] ^ 0x20;
-      printf("    Escaped char\n");
-    }
-  }
+
+  //do stuffing of buffer
+  stuffingBuffer(buffer, &size, &bcc2);
+
   printf("    BCC and byte stuffing complete\n");
   int sizeOfPacket = (size + 6) * sizeof(char);
   char* trama = malloc(sizeOfPacket);
+
   buildTrama(trama, buffer, size, bcc2);
+
+  int res;
   res = write(fileDescriptor, trama, sizeOfPacket);
   if (res <= 0){
     perror("Error writing to serial port");
     return -1;
   }
   printf("    Information sent: %d bytes written\n", res);
+
   // Get Receiver Ready
   printf("    Looking for receiver ready");
   char control = trama[2] << 1;
@@ -221,77 +318,48 @@ int llwrite(int fileDescriptor, char* buffer, unsigned size){
   if(readControlPacket(fileDescriptor, recReadyByte) < 0){
     printf("    Receiver ready not received");
     return -1;
-  } else
-    printf("    Receiver ready received");
-
-  printf("<LLWRITE/>\n");
+  }
+  
+  printf("    Receiver ready received\n <LLWRITE/>\n");
   return 0;
 }
+
 
 /**
 * Reads a control packet from the file descriptor and returns the current state.
 */
 int readControlPacket(int fileDescriptor, char expectedControlByte){
   //Read from serial port
-  int state = 0;
   flag = 0; // To enable the while loop to be performed
   int res;
   unsigned char read_char;
-  unsigned char package_received[5];
+
+  State_Machine sm;
+  unsigned char expected_flag[4];
+  expected_flag[0] = FLAG;
+  expected_flag[1] = A;
+  expected_flag[2] = expectedControlByte;
+  expected_flag[4] = FLAG;
+  init_State_Machine(&sm, expected_flag);
   printf("Reading Control Packet\n");
-  while(state != 5 && flag == 0) {
+
+  while(!endOfStateMachine(&sm) && flag == 0) {
    res = read(fileDescriptor, &read_char, 1);
    if (res > 0){
-     printf("current state = %d\n",state);
+     printf("current state = %d\n", sm.state_id);
      printf("read byte: 0x%x\n", read_char);
-     switch(state){
-       case 0: {
-         if (read_char == FLAG){
-           package_received[0] = read_char;
-           state = 1;
-         }
-         break;
-       }
-       case 1: {
-         if (read_char == A) {
-           package_received[1] = read_char;
-           state = 2;
-         } else if (read_char != FLAG) {
-           state = 0;
-         }
-         break;
-       }
-       case 2: {
-         if (read_char == expectedControlByte) {
-           package_received[2] = read_char;
-           state = 3;
-         } else if (read_char == FLAG) {
-           state = 1;
-         } else {
-           state = 0;
-         }
-         break;
-       }
-       case 3: {
-         if (read_char == (package_received[1]^package_received[2])) {
-           state = 4;
-         } else {
-           state = 0;
-         }
-         break;
-       }
-       case 4: {
-         if (read_char == FLAG) {
-           state = 5;
-         } else {
-           state = 0;
-         }
-         break;
-       }
-     }
+     
+     //State Machine
+     next_State(&sm, &read_char);
    }
   }
-  return state;
+
+  if (endOfStateMachine(&sm)){
+    printf("Acknowledge received\n");
+    return 0;
+  }
+
+  return -1;
 }
 
 
@@ -300,7 +368,6 @@ int readControlPacket(int fileDescriptor, char expectedControlByte){
 */
 int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByte){
   int res; //Used to store the return of write() and read() calls.
-  int state;
   alarm_tries = 1;
   while(alarm_tries < MAX_TRIES){
     if(flag){
@@ -308,11 +375,8 @@ int sendPacketAndWaitResponse(int fileDescriptor, char* packet, char responseByt
       //Try to send message
       res = write(fileDescriptor, packet, 5);
       printf("Try number %d, %d bytes written\n", alarm_tries, res);
-      state = readControlPacket(fileDescriptor,responseByte);
-      if (state == 5){
-        printf("Acknowledge received\n");
+      if(!readControlPacket(fileDescriptor,responseByte))
         return 0;
-      }
     }
   }
   return -1;

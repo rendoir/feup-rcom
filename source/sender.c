@@ -8,6 +8,17 @@
 #define BAUDRATE B38400
 #define MODEMDEVICE "/dev/ttyS1"
 
+int init_inputMode(struct termios* new_tio){
+  //Init input mode
+  bzero(new_tio, sizeof(*new_tio));
+  new_tio->c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+  new_tio->c_iflag = IGNPAR;
+  new_tio->c_oflag = 0;
+  new_tio->c_lflag = 0;
+  new_tio->c_cc[VTIME]    = 1;   /* inter-character timer unused */
+  new_tio->c_cc[VMIN]     = 0;   /* Polling Mode*/
+  return 0;
+}
 
 int main(int argc, char** argv)
 {
@@ -45,14 +56,7 @@ int main(int argc, char** argv)
     exit(-1);
   }
 
-  //Init input mode
-  bzero(&new_tio, sizeof(new_tio));
-  new_tio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-  new_tio.c_iflag = IGNPAR;
-  new_tio.c_oflag = 0;
-  new_tio.c_lflag = 0;
-  new_tio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
-  new_tio.c_cc[VMIN]     = 0;   /* Polling Mode*/
+  init_inputMode(&new_tio);
   tcflush(sp_fd, TCIOFLUSH);
 
   //Set new termios
