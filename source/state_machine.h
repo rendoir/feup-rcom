@@ -7,8 +7,8 @@
 typedef struct State_Machine
 {
     unsigned state_id;
-    unsigned char expect_flag[4];
-    unsigned char package_received[4];
+    unsigned char expect_flag[5];
+    unsigned char package_received[5];
 } State_Machine;
 
 int next_State(State_Machine *sm, unsigned char *read_char);
