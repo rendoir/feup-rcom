@@ -73,7 +73,7 @@ char readControlFrame(int fileDescriptor)
   unsigned char read_char;
 
   State_Machine sm;
-  unsigned char expected_flag[4];
+  unsigned char expected_flag[5];
   expected_flag[0] = FLAG;
   expected_flag[1] = A;
   //expected_flag[2] = expectedControlByte;

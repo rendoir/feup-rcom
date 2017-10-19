@@ -7,7 +7,7 @@
 */
 int next_State(State_Machine* sm, unsigned char* read_char){
     (sm->package_received)[sm->state_id] = *read_char;
-
+    
     if (sm->state_id == 1){
       sm->state_id++;
       return 0;
@@ -28,7 +28,7 @@ int next_State(State_Machine* sm, unsigned char* read_char){
 int init_State_Machine(State_Machine* sm, unsigned char* expect_flag_default){
     sm = malloc(sizeof(State_Machine));
     sm->state_id = 0;
-    memcpy(sm->expect_flag, expect_flag_default, 4);
+    memcpy(sm->expect_flag, expect_flag_default, 5);
     return 0;
 }
 
