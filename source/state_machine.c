@@ -8,7 +8,7 @@
 */
 int next_State(State_Machine* sm, unsigned char* read_char){
     (sm->package_received)[sm->state_id] = *read_char;
-
+    printf("expected char: 0x%02X, got: 0x%02X, current state=%d\n", (sm->expect_flag)[sm->state_id], *read_char,sm->state_id);
     if (sm->state_id == 2){
       sm->state_id++;
       return 0;
@@ -16,7 +16,7 @@ int next_State(State_Machine* sm, unsigned char* read_char){
     if(sm->state_id == 3){
         (sm->expect_flag)[3] = (sm->package_received)[1] ^ (sm->package_received)[2];
     }
-    printf("expected char: 0x%02X\n", (sm->expect_flag)[sm->state_id]);
+
     if((sm->package_received)[sm->state_id] == (sm->expect_flag)[sm->state_id]){
         sm->state_id++;
         return 0;
