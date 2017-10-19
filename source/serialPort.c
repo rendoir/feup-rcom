@@ -25,17 +25,17 @@ int init_inputMode(struct termios* new_tio, int caller){
     }
     return 0;
   }
-  
+
   int serialPort_setNewSettigns(int sp_fd, int caller){
     //Load original termios
     if ( tcgetattr(sp_fd,&old_tio) == -1) { /* save current port settings */
       perror("tcgetattr");
       exit(-1);
     }
-  
+
     init_inputMode(&new_tio, caller);
     tcflush(sp_fd, TCIOFLUSH);
-  
+
     //Set new termios
     if ( tcsetattr(sp_fd,TCSANOW,&new_tio) == -1) {
       perror("tcsetattr");
@@ -43,14 +43,13 @@ int init_inputMode(struct termios* new_tio, int caller){
     }
     return 0;
   }
-  
+
   int openSerialPort(int port, int caller){
     //Read command line arguments
     char serialName[255] = "/dev/ttyS";
-    char str_port[1];
+    char str_port[2];
     sprintf(str_port, "%d", port);
     strcat(serialName, str_port);
-  
     if (strcmp("/dev/ttyS0", serialName) && strcmp("/dev/ttyS1", serialName))
     {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
@@ -58,7 +57,7 @@ int init_inputMode(struct termios* new_tio, int caller){
     }
     //Open serial port device for reading and writing and not as controlling tty
     //because we don't want to get killed if linenoise sends CTRL-C.
-    int sp_fd; 
+    int sp_fd;
     sp_fd = open(serialName, O_RDWR | O_NOCTTY );
     if (sp_fd <0) {
       perror(serialName);
@@ -66,8 +65,8 @@ int init_inputMode(struct termios* new_tio, int caller){
     }
     return sp_fd;
   }
-  
-  
+
+
   int closeSerialPort_and_SetOldSettigns(const int* sp_fd){
     //Reset termios to the original
     if ( tcsetattr(*sp_fd,TCSANOW,&old_tio) == -1) {
@@ -75,10 +74,8 @@ int init_inputMode(struct termios* new_tio, int caller){
       perror("tcsetattr");
       exit(-1);
     }
-  
+
     //Close serial port
     close(*sp_fd);
     return 0;
   }
-  
-  
