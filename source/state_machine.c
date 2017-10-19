@@ -7,6 +7,11 @@
 * Returns 0 in case of sucess, -1 if not succesful.
 */
 int next_State(State_Machine* sm, unsigned char* read_char){
+  printf("next_state called\n");
+  for (int i = 0; i < 5; i++){
+    printf("sm->expect_flag[%d] = 0x%02X\n", i, sm->expect_flag[i]);
+  }
+
     (sm->package_received)[sm->state_id] = *read_char;
     printf("expected char: 0x%02X, got: 0x%02X, current state=%d\n", (sm->expect_flag)[sm->state_id], *read_char,sm->state_id);
     if (sm->state_id == 2){
