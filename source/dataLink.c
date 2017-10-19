@@ -91,7 +91,7 @@ char readControlFrame(int fileDescriptor)
 
       //State Machine
       if (next_State(&sm, &read_char) == -1){
-          printf("Error in state machine");
+          printf("Error in state machine\n");
           alarm(0); //cancel alarm, error has been detected
           return -1;
       }
@@ -206,8 +206,8 @@ int llopenReceiver(int fileDescriptor)
   char controlByte = readControlFrame(fileDescriptor);
   if (controlByte < 0)
   {
-    perror("Error reading SET frame");
-    return -3;
+    printf("Error reading SET frame, error no: %d", controlByte);
+    return controlByte;
   }
   if (controlByte == C_SET){
     printf("    Received SET\n");
@@ -216,7 +216,7 @@ int llopenReceiver(int fileDescriptor)
     if (write(fileDescriptor, g_ua, CP_LENGTH) != CP_LENGTH)
     {
       perror("Error sending UA");
-      return -4;
+      return -1;
     }
     printf("    UA Sent\n");
   }
