@@ -31,6 +31,9 @@ int init_State_Machine(State_Machine* sm, unsigned char* expect_flag_default){
     sm = malloc(sizeof(State_Machine));
     sm->state_id = 0;
     memcpy(sm->expect_flag, expect_flag_default, 5);
+    for (int i = 0; i < 5; i++){
+      printf("sm->expect_flag[%d] = 0x%02X\n", i, sm->expect_flag[i]);
+    }
     return 0;
 }
 
