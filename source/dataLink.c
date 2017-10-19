@@ -71,36 +71,38 @@ char readControlFrame(int fileDescriptor)
   flag = 0; // To enable the while loop to be performed
   int res;
   unsigned char read_char;
-
-  State_Machine sm;
   unsigned char expected_flag[5];
+  unsigned char frame_received[5];
   expected_flag[0] = FLAG;
   expected_flag[1] = A;
   //expected_flag[2] = expectedControlByte;
   expected_flag[4] = FLAG;
-  init_State_Machine(&sm, expected_flag);
+  int state = 0;
   printf("Reading Control Frame\n");
 
-  while (!endOfStateMachine(&sm) && flag == 0)
+  while (state != 5 && flag == 0)
   {
     res = read(fileDescriptor, &read_char, 1);
     if (res > 0)
     {
-      printf("current state = %d\n", sm.state_id);
+      printf("current state = %d\n", state);
       printf("read byte: 0x%x\n", read_char);
-
-      //State Machine
-      if (next_State(&sm, &read_char, expected_flag) == -1){
-          printf("Error in state machine\n");
-          alarm(0); //cancel alarm, error has been detected
-          return -1;
+      frame_received[state] = res;
+      if (state == 2){
+        continue;
+      }
+      if (state == 3){
+        expected_flag[3] = frame_received[1] ^ frame_received[2];
+      }
+      if (frame_received[state] == expected_flag[state]){
+        state++;
       }
     }
   }
 
-  if (endOfStateMachine(&sm))
+  if (state == 5)
   {
-    return sm.package_received[2]; // control byte
+    return frame_received[2]; // control byte
   }
 
   return -2;

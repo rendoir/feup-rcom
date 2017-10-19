@@ -1,7 +1,6 @@
 #ifndef DATA_LINK_H
 #define DATA_LINK_H
 
-#include "state_machine.h"
 #include "serialPort.h"
 #include "string.h"
 
