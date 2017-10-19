@@ -1,3 +1,4 @@
+#include <strings.h>
 #include "serialPort.h"
 
 struct termios old_tio, new_tio;
