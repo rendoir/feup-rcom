@@ -124,6 +124,7 @@ char sendControlFrameAndWait(int fileDescriptor, char *frame)
       res = write(fileDescriptor, frame, 5);
       printf("Try number %d, %d bytes written\n", alarm_tries, res);
       controlByte = readControlFrame(fileDescriptor);
+      printf("sendControlFrameAndWait -> controlByte = 0x%02x\n", controlByte);
       alarm(0); // cancel previous alarm
       if (controlByte != -2){ // do not return if readControlFrame returned cause of alarm.
         return controlByte;
