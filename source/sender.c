@@ -19,7 +19,7 @@ int main(int argc, char** argv)
 		perror("Error in llopen");
 		exit(-1);
   }
-  
+
 	char* myBuffer = "ola";
 	if (llwrite(sp_fd,myBuffer,4) != 0){
 		perror("Error writing data to serial port");

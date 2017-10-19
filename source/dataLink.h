@@ -17,7 +17,7 @@
 #define TRANSMITTER 0
 #define RECEIVER 1
 
-#define CP_LENGTH 5 // control packet length
+#define CP_LENGTH 5 // control frame length
 
 #define ESCAPE_CHAR 0x7d
 
@@ -35,24 +35,27 @@ void alarm_handler();
 void insertValueAtPos(size_t pos, char value, char *array, int length);
 
 /**
- * Makes the Trama for sender/receiver
+ * Makes the Frame for sender/receiver
  */
-void buildTrama(char *trama, char *buffer, unsigned length, unsigned char bcc2);
+void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2);
 
 /**
-* Makes a control/supervision packet with the given control byte/field.
+* Makes a control/supervision frame with the given control byte/field.
 */
-void buildControlPacket(char controlByte, char *packet);
+void buildControlFrame(char controlByte, char *frame);
 
 /**
-* Reads a control packet from the file descriptor and returns the current state.
+* Reads a control frame from the file descriptor and returns the current state.
+* Returns the control frame read, or null if bcc fails;
 */
-int readControlPacket(int fileDescriptor, char expectedControlByte);
+char readControlFrame(int fileDescriptor);
 
 /**
-* Sends a given packet and waits for unumberd acknowledge
+* Sends a given frame and waits for unumberd acknowledge
 */
-int sendPacketAndWaitResponse(int fileDescriptor, char *packet, char responseByte);
+char sendControlFrameAndWait(int fileDescriptor, char *frame);
+
+char sendInfoFrameAndWait(int fileDescriptor, char *frame, int sizeOfFrame);
 
 /**
 * Opens/establish the connection.
@@ -78,7 +81,7 @@ int llopenReceiver(int fileDescriptor);
 /*
  * Do Stuffing of Buffer
  */
-int stuffingBuffer(char *buffer, unsigned *size, char *bcc2);
+int stuffingBuffer(String *bufferString, unsigned *size, char *bcc2);
 
 /**
 * Writes a buffer array to the fileDescriptor.
@@ -88,9 +91,9 @@ int stuffingBuffer(char *buffer, unsigned *size, char *bcc2);
 int llwrite(int fileDescriptor, char *buffer, unsigned length);
 
 /**
-* A method to read from the file descriptor into the buffer (trama).
+* A method to read from the file descriptor into the buffer (frame).
 */
-int llread(int fd, char *trama);
+int llread(int fd, char *frame);
 
 /**
 * Close the connection.
@@ -104,13 +107,13 @@ int llclose(int fileDescriptor, int caller);
 * when caller is TRANSMITTER
 * Return: 0 if success, negative on error.
 */
-int llcloseTransmitter(const int *fileDescriptor, char *disc_packet);
+int llcloseTransmitter(const int *fileDescriptor, char *disc_frame);
 
 /**
 * Close the connection.
 * when caller is RECEIVER
 * Return: 0 if success, negative on error.
 */
-int llcloseReceiver(const int *fileDescriptor, char *disc_packet);
+int llcloseReceiver(const int *fileDescriptor, char *disc_frame);
 
 #endif

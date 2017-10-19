@@ -2,19 +2,27 @@
 
 #define FLAG   0x7e
 
+/**
+* Returns 0 in case of sucess, -1 if not succesful.
+*/
 int next_State(State_Machine* sm, unsigned char* read_char){
     (sm->package_received)[sm->state_id] = *read_char;
 
+    if (sm->state_id == 1){
+      sm->state_id++;
+      return 0;
+    }
     if(sm->state_id == 2){
         (sm->expect_flag)[3] = (sm->package_received)[1] ^ (sm->package_received)[2];
     }
     if((sm->package_received)[sm->state_id] == (sm->expect_flag)[sm->state_id]){
         sm->state_id++;
-    } else if((sm->package_received)[sm->state_id] == FLAG){
-        sm->state_id = 0;
         return 0;
     }
-    return 0;
+    if((sm->package_received)[sm->state_id] == FLAG){
+        sm->state_id = 0;
+    }
+    return -1;
 }
 
 int init_State_Machine(State_Machine* sm, unsigned char* expect_flag_default){

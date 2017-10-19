@@ -2,6 +2,7 @@
 #define STRING_H
 
 #include <stdlib.h>
+#include <stdio.h>
 
 /**
  * String struct that holds a buffer and the size of the allocated memory.
