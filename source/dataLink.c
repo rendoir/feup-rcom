@@ -89,6 +89,7 @@ char readControlFrame(int fileDescriptor)
       printf("read byte: 0x%x\n", read_char);
       frame_received[state] = read_char;
       if (state == 2){
+        state++;
         continue;
       }
       if (state == 3){
