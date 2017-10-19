@@ -90,7 +90,7 @@ char readControlFrame(int fileDescriptor)
       printf("read byte: 0x%x\n", read_char);
 
       //State Machine
-      if (next_State(&sm, &read_char) == -1){
+      if (next_State(&sm, &read_char, expected_flag) == -1){
           printf("Error in state machine\n");
           alarm(0); //cancel alarm, error has been detected
           return -1;

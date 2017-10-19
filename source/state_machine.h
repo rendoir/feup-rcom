@@ -11,7 +11,7 @@ typedef struct State_Machine
     unsigned char package_received[5];
 } State_Machine;
 
-int next_State(State_Machine *sm, unsigned char *read_char);
+int next_State(State_Machine *sm, unsigned char *read_char,unsigned char* expected_bytes);
 
 int init_State_Machine(State_Machine *sm, unsigned char *expect_flag_default);
 
