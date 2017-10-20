@@ -9,20 +9,20 @@ struct termios old_tio, new_tio;
 /*------------------------------------*/
 /*------------------------------------*/
 
-int init_inputMode(struct termios* new_tio, int caller){
+int init_inputMode(int caller){
     //Init input mode
-    bzero(new_tio, sizeof(*new_tio));
-    new_tio->c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
-    new_tio->c_iflag = IGNPAR;
-    new_tio->c_oflag = 0;
-    new_tio->c_lflag = 0;
+    bzero(&new_tio, sizeof(new_tio));
+    new_tio.c_cflag = BAUDRATE | CS8 | CLOCAL | CREAD;
+    new_tio.c_iflag = IGNPAR;
+    new_tio.c_oflag = 0;
+    new_tio.c_lflag = 0;
     if(caller == TRANSMITTER){
-      new_tio->c_cc[VTIME]    = 1;   /* inter-character timer unused */
-      new_tio->c_cc[VMIN]     = 0;   /* Polling Mode*/
+      new_tio.c_cc[VTIME]    = 1;   /* inter-character timer unused */
+      new_tio.c_cc[VMIN]     = 0;   /* Polling Mode*/
     }
     else if(caller == RECEIVER){
-      new_tio->c_cc[VTIME]    = 0;   /* read time-out */
-      new_tio->c_cc[VMIN]     = 1;   /* number chars to read (blocking) */
+      new_tio.c_cc[VTIME]    = 0;   /* read time-out */
+      new_tio.c_cc[VMIN]     = 1;   /* number chars to read (blocking) */
     }
     return 0;
   }
@@ -34,7 +34,7 @@ int init_inputMode(struct termios* new_tio, int caller){
       exit(-1);
     }
 
-    init_inputMode(&new_tio, caller);
+    init_inputMode(caller);
     tcflush(sp_fd, TCIOFLUSH);
 
     //Set new termios

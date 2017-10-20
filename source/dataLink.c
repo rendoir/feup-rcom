@@ -185,8 +185,10 @@ int sendImportantFrame(int fd, char* frame, int length){
     if (flag){
       alarm(TIME_OUT);
       flag=0;
+      printf("Writing to serial port\n");
       res = write(fd,frame,length);
       if (res > 0){
+        printf("Written %d bytes to serial port\n",res);
         char controlField = readControlFrame(fd);
         if (controlField == C_UA){
           printf("UA received\n");

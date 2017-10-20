@@ -19,7 +19,7 @@
  * depending on caller if is TRANSMITTER or RECEIVER
  */
 
-int init_inputMode(struct termios *new_tio, int caller);
+int init_inputMode(int caller);
 
 //TODO: comment
 int serialPort_setNewSettigns(int sp_fd, int caller);
