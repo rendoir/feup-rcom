@@ -376,16 +376,16 @@ int llread(int fd, char *frame)
 
   //Check BCC2 and unstuff
   int size = index;
-  char expected_bcc2 = frame[size - 2];
+  char received_bcc2 = frame[size - 2];
   char calculated_bcc2 = 0;
   int i;
   for (i = 4; i < size - 2; i++)
   {
     calculated_bcc2 ^= frame[i];
   }
-  if (expected_bcc2 != calculated_bcc2)
+  if (received_bcc2 != calculated_bcc2)
   {
-    perror("BCC2 Incorrect parity");
+    printf("BCC2 Incorrect parity: received 0x%02X, expected 0x%02X\n",received_bcc2,calculated_bcc2);
     return -2;
   }
 
