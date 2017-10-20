@@ -310,17 +310,16 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
   char bcc2 = 0;
   int res;
   //do stuffing of buffer
-  /*
+
   stuffingBuffer(&buffer, &size, &bcc2);
 
   printf("    BCC and byte stuffing complete\n");
   int sizeOfFrame = (size + 6) * sizeof(char);
   char *frame = malloc(sizeOfFrame);
 
-  buildFrame(&frame, buffer, size, bcc2);*/
+  buildFrame(&frame, &buffer, size, bcc2);
 
-  //res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
-  res = sendImportantFrame(fileDescriptor,buffer,size);
+  res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
   if (res < 0){
     perror("Check your connection");
     return -1;
