@@ -382,6 +382,7 @@ int llread(int fd, char *frame)
   for (i = 4; i < size - 2; i++)
   {
     calculated_bcc2 ^= frame[i];
+    printf("Expected Bcc2 = 0x%02X\n", calculated_bcc2);
   }
   if (received_bcc2 != calculated_bcc2)
   {
