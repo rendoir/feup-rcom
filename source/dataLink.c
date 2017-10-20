@@ -11,7 +11,7 @@ int flag = 1, alarm_tries = 1;
 */
 void alarm_handler()
 {
-  printf("    Alarm #%d\n", alarm_tries);
+  printf("Alarm #%d\n", alarm_tries);
   flag = 1;
   alarm_tries++;
 }
@@ -72,35 +72,62 @@ void buildControlFrame(char controlByte, char *frame)
 char readControlFrame(int fileDescriptor)
 {
   //Read from serial port
-  flag = 0; // To enable the while loop to be performed
+
   int res;
   unsigned char read_char;
-  unsigned char expected_flag[5];
   unsigned char frame_received[5];
-  expected_flag[0] = FLAG;
-  expected_flag[1] = A;
-  //expected_flag[2] = expectedControlByte;
-  expected_flag[4] = FLAG;
   int state = 0;
+  flag = 0;
   printf("Reading Control Frame\n");
-
   while (state != 5 && flag == 0)
   {
+    printf("Trying to read from serial port\n");
     res = read(fileDescriptor, &read_char, 1);
     if (res > 0)
     {
       printf("current state = %d\n", state);
       printf("read byte: 0x%x\n", read_char);
       frame_received[state] = read_char;
-      if (state == 2){
-        state++;
-        continue;
-      }
-      if (state == 3){
-        expected_flag[3] = frame_received[1] ^ frame_received[2];
-      }
-      if (frame_received[state] == expected_flag[state]){
-        state++;
+      switch(state){
+        case 0:{
+          if (read_char == FLAG){
+            state = 1;
+          }
+          break;
+        }
+        case 1:{
+          if (read_char != FLAG){
+            state = 2;
+          }else{
+            state = 1;
+          }
+          break;
+        }
+        case 2:{
+          if ( read_char != FLAG) {
+            state = 3;
+          }else{
+            state = 1;
+          }
+          break;
+        }
+        case 3:{
+          if ( (frame_received[1] ^ frame_received[2]) == read_char){
+            state = 4;
+          }else{
+            printf("BCC error\n");
+            return -1;
+          }
+          break;
+        }
+        case 4:{
+          if (read_char == FLAG){
+            state = 5;
+          }else{
+            state = 0;
+          }
+          break;
+        }
       }
     }
   }
@@ -113,33 +140,6 @@ char readControlFrame(int fileDescriptor)
   return -2;
 }
 
-/**
-* Sends a given frame and waits for a given response.
-* <param responseByte> Char that is expected to be read in the control frame </param>
-*/
-char sendControlFrameAndWait(int fileDescriptor, char *frame)
-{
-  int res; //Used to store the return of write() and read() calls.
-  alarm_tries = 1;
-  unsigned char controlByte;
-  while (alarm_tries < MAX_TRIES)
-  {
-    if (flag)
-    {
-      alarm(TIME_OUT);
-      //Try to send message
-      res = write(fileDescriptor, frame, 5);
-      printf("Try number %d, %d bytes written\n", alarm_tries, res);
-      controlByte = readControlFrame(fileDescriptor);
-      printf("sendControlFrameAndWait -> controlByte = 0x%02x\n", controlByte);
-      alarm(0); // cancel previous alarm
-      if (controlByte != -2){ // do not return if readControlFrame returned cause of alarm.
-        return controlByte;
-      }
-    }
-  }
-  return -2;
-}
 
 /*------------------------------------*/
 /*------------------------------------*/
@@ -163,7 +163,7 @@ int llopen(int port, int caller)
     return -1;
   if (caller == TRANSMITTER)
   {
-    return llopenTrasnmitter(fileDescriptor);
+    return llopenTransmitter(fileDescriptor);
   }
   else if (caller == RECEIVER)
   {
@@ -173,31 +173,64 @@ int llopen(int port, int caller)
 }
 
 /**
+* byte stuffing assumed for I frames
+*/
+int sendImportantFrame(int fd, char* frame, int length){
+  flag=1;
+  alarm_tries = 1;
+  int res;
+  while(alarm_tries < MAX_TRIES){
+    if (flag){
+      alarm(TIME_OUT);
+      flag=0;
+      res = write(fd,frame,length);
+      if (res > 0){
+        char controlField = readControlFrame(fd);
+        if (controlField == C_UA){
+          printf("UA received\n");
+          alarm(0);
+          break;
+        }else if ((controlField & C_RR) == C_RR){
+          printf("RR received\n");
+          alarm(0);
+          break;
+        }else if ((controlField & C_REJ) == C_REJ){
+          printf("REJ received\n");
+          alarm(0);
+          alarm_tries = 1;
+          flag = 1;
+        }else if (controlField == -1){ //bcc error
+          printf("BCC error\n");
+          alarm(0);
+          alarm_tries = 1;
+          flag = 1;
+        }else{
+          printf("TIMEOUT\n");
+        }
+      }
+    }
+  }
+  if (alarm_tries >= MAX_TRIES){
+    return -1;
+  }
+  return 0;
+}
+
+/**
 * Opens/establish the connection.
 * when caller is TRANSMITTER
 * Return: 0 if success, negative on error.
 */
-int llopenTrasnmitter(int fileDescriptor)
+int llopenTransmitter(int fileDescriptor)
 {
+  int res;
+  printf("\n<LLOPEN>\n");
   char set[5];
   buildControlFrame(C_SET, set);
-  int max_tries = 3;
-  int current_try = 0;
-  char controlByte;
-  while ((controlByte = sendControlFrameAndWait(fileDescriptor, set)) < 0 && (current_try < max_tries))
-  {
-    if (controlByte == -2){
-      perror("Response not received, check your connection\n");
-      return -2;
-    }
-    current_try++;
-  }
-  if (current_try < max_tries){
-    if (controlByte == C_UA){
-      printf("    SET Sent and UA Received");
-    }
-  }else{
-    perror("Response is being received but state machine keeps throwing error!");
+  res = sendImportantFrame(fileDescriptor,set,5);
+  if (res < 0){
+    perror("Could not establish connection");
+    return -1;
   }
   printf("\n<LLOPEN/>\n");
   return 0;
@@ -262,42 +295,6 @@ int stuffingBuffer(char* buffer, unsigned *size, char *bcc2)
   return 0;
 }
 
-char sendInfoFrameAndWait(int fileDescriptor, char *frame, int sizeOfFrame){
-  printf("<SEND_INFO_FRAME_AND_WAIT>\n");
-  int res; //Used to store the return of write() and read() calls.
-  alarm_tries = 1;
-  flag=1;
-  char control = frame[2] << 1;
-  control = control ^ 0x80;
-  char recReadyByte = C_RR | control;
-  char recRejectByte = C_REJ | control;
-  unsigned char controlByte;
-  while (alarm_tries < MAX_TRIES)
-  {
-    if (flag)
-    {
-      alarm(TIME_OUT);
-      //Try to send message
-      res = write(fileDescriptor, frame, sizeOfFrame);
-      printf("Try number %d, %d bytes written\n", alarm_tries, res);
-      controlByte = readControlFrame(fileDescriptor);
-      alarm(0); // cancel previous alarm
-      if (controlByte == recReadyByte){
-        printf("    Receiver Ready\n");
-        return 0;
-      }else if (controlByte == recRejectByte){
-        printf("    Receiever Rejected, Trying again\n");
-        alarm_tries = 1;
-        flag = 1;
-      }else {
-        printf("    Received unexpected byte: 0x%02x",controlByte);
-      }
-    }
-  }
-  return -2;
-  printf("</SEND_INFO_FRAME_AND_WAIT>\n");
-}
-
 /**
 * Writes a buffer array to the fileDescriptor.
 * length - Length of the array to send
@@ -307,6 +304,7 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
 {
   printf("<LLWRITE>\n");
   char bcc2 = 0;
+  int res;
   //do stuffing of buffer
   stuffingBuffer(buffer, &size, &bcc2);
 
@@ -315,13 +313,13 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
   char *frame = malloc(sizeOfFrame);
 
   buildFrame(frame, buffer, size, bcc2);
-
-  if (sendInfoFrameAndWait(fileDescriptor,frame,sizeOfFrame) == -2){
-    printf("MAX_TRIES achieved\n");
-    return -2;
-  }else{
-    printf("<LLWRITE/>\n");
+  res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
+  if (res < 0){
+    perror("Check your connection");
+    return -1;
   }
+
+  printf("<LLWRITE/>\n");
   return 0;
 }
 
@@ -442,15 +440,11 @@ int llclose(int fileDescriptor, int caller)
 */
 int llcloseTransmitter(const int *fileDescriptor, char *disc_frame)
 {
-  char controlByte = sendControlFrameAndWait(*fileDescriptor, disc_frame);
+  char controlByte = sendImportantFrame(*fileDescriptor, disc_frame, CP_LENGTH);
   if (controlByte < 0)
   {
-    if (controlByte == -1){
-      perror("Error in state machine");
-    }else{
-      perror("Could not establish connection, make sure the systems are connected");
-    }
-    return controlByte;
+    perror("Could not establish connection, make sure the systems are connected");
+    return -1;
   }else if(controlByte != C_DISC){
     printf("Expecting disconnect packet but received 0x%02x\n",controlByte);
     return -1;

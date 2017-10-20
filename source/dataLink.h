@@ -49,11 +49,9 @@ void buildControlFrame(char controlByte, char *frame);
 char readControlFrame(int fileDescriptor);
 
 /**
-* Sends a given frame and waits for unumberd acknowledge
+* byte stuffing assumed for I frames
 */
-char sendControlFrameAndWait(int fileDescriptor, char *frame);
-
-char sendInfoFrameAndWait(int fileDescriptor, char *frame, int sizeOfFrame);
+int sendImportantFrame(int fd, char* frame, int length);
 
 /**
 * Opens/establish the connection.
@@ -67,7 +65,7 @@ int llopen(int fileDescriptor, int caller);
 * when caller is TRANSMITTER
 * Return: 0 if success, negative on error.
 */
-int llopenTrasnmitter(int fileDescriptor);
+int llopenTransmitter(int fileDescriptor);
 
 /**
 * Opens/establish the connection.
