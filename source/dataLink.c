@@ -19,29 +19,31 @@ void alarm_handler()
 /**
 * Inserts a char in any given index of the array.
 */
-void insertValueAtPos(size_t pos, char value, char *array, int length)
+void insertValueAtPos(size_t pos, char value, char ** array, int length)
 {
   size_t i;
   for (i = length - 1; i >= pos; i--)
   {
-    array[i + 1] = array[i];
+    (*array)[i + 1] = (*array)[i];
   }
-  array[pos] = value;
+  (*array)[pos] = value;
 }
 
 /**
  * Makes the Frame for sender/receiver
  */
-void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
+void buildFrame(char **frame, char **buffer, unsigned length, unsigned char bcc2)
 {
   printf("<BUILD_FRAME>\n");
-  frame[0] = FLAG;
-  frame[1] = A;
-  frame[2] = (char)(writeCounter++ % 2) << 6;
-  frame[3] = frame[1] ^ frame[2];
-  memcpy(&frame[4], buffer, length);
-  frame[length + 4] = bcc2;
-  frame[length + 5] = FLAG;
+  (*frame)[0] = FLAG;
+  (*frame)[1] = A;
+  (*frame)[2] = (char)(writeCounter++ % 2) << 6;
+  (*frame)[3] = (*frame)[1] ^ (*frame)[2];
+  printf("    Copying buffer to frame\n");
+  memcpy(&(*frame)[4], buffer, length);
+  printf("    Memory copied\n");
+  (*frame)[length + 4] = bcc2;
+  (*frame)[length + 5] = FLAG;
   printf("</BUILD_FRAME>\n");
 }
 
@@ -54,14 +56,15 @@ void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
 /**
 * Makes a control/supervision frame with the given control byte/field.
 */
-void buildControlFrame(char controlByte, char *frame)
+void buildControlFrame(char controlByte, char **frame)
 {
   printf("<BUILD_CONTROL_FRAME>\n");
-  frame[0] = FLAG;
-  frame[1] = A;
-  frame[2] = controlByte;
-  frame[3] = frame[1] ^ frame[2];
-  frame[4] = FLAG;
+  (*frame) = malloc(CP_LENGTH * sizeof(char));
+  (*frame)[0] = FLAG;
+  (*frame)[1] = A;
+  (*frame)[2] = controlByte;
+  (*frame)[3] = (*frame)[1] ^ (*frame)[2];
+  (*frame)[4] = FLAG;
   printf("</BUILD_CONTROL_FRAME>\n");
 }
 
@@ -81,7 +84,6 @@ char readControlFrame(int fileDescriptor)
   printf("Reading Control Frame\n");
   while (state != 5 && flag == 0)
   {
-    printf("Trying to read from serial port\n");
     res = read(fileDescriptor, &read_char, 1);
     if (res > 0)
     {
@@ -225,8 +227,8 @@ int llopenTransmitter(int fileDescriptor)
 {
   int res;
   printf("\n<LLOPEN>\n");
-  char set[5];
-  buildControlFrame(C_SET, set);
+  char *set = NULL;
+  buildControlFrame(C_SET, &set);
   res = sendImportantFrame(fileDescriptor,set,5);
   if (res < 0){
     perror("Could not establish connection");
@@ -243,7 +245,7 @@ int llopenTransmitter(int fileDescriptor)
 */
 int llopenReceiver(int fileDescriptor)
 {
-  char g_ua[CP_LENGTH];
+  char *g_ua = NULL;
   char controlByte = readControlFrame(fileDescriptor);
   if (controlByte < 0)
   {
@@ -252,7 +254,7 @@ int llopenReceiver(int fileDescriptor)
   }
   if (controlByte == C_SET){
     printf("    Received SET\n");
-    buildControlFrame(C_UA, g_ua);
+    buildControlFrame(C_UA, &g_ua);
     printf("    Sending UA\n");
     if (write(fileDescriptor, g_ua, CP_LENGTH) != CP_LENGTH)
     {
@@ -271,24 +273,24 @@ int llopenReceiver(int fileDescriptor)
 /*------------------------------------*/
 /*------------------------------------*/
 
-int stuffingBuffer(char* buffer, unsigned *size, char *bcc2)
+int stuffingBuffer(char** buffer, unsigned *size, char *bcc2)
 {
   size_t i;
   size_t allocatedSpace = *size;
   for (i = 0; i < *size; i++)
   {
-    *bcc2 = *bcc2 ^ buffer[i];
-    if (buffer[i] == 0x7e || buffer[i] == 0x7d)
+    *bcc2 = *bcc2 ^ (*buffer)[i];
+    if ((*buffer)[i] == 0x7e || (*buffer)[i] == 0x7d)
     {
       if (*size >= allocatedSpace)
       {
         allocatedSpace = *size * 2;
-        buffer = realloc(buffer,allocatedSpace);
+        (*buffer) = realloc((*buffer),allocatedSpace);
       }
       insertValueAtPos(i, ESCAPE_CHAR, buffer, *size);
       (*size)++;
       i++;
-      buffer[i] = buffer[i] ^ 0x20;
+      (*buffer)[i] = (*buffer)[i] ^ 0x20;
       printf("    Escaped char\n");
     }
   }
@@ -300,7 +302,7 @@ int stuffingBuffer(char* buffer, unsigned *size, char *bcc2)
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char *buffer, unsigned size)
+int llwrite(int fileDescriptor, char **buffer, unsigned size)
 {
   printf("<LLWRITE>\n");
   char bcc2 = 0;
@@ -312,7 +314,7 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
   int sizeOfFrame = (size + 6) * sizeof(char);
   char *frame = malloc(sizeOfFrame);
 
-  buildFrame(frame, buffer, size, bcc2);
+  buildFrame(&frame, buffer, size, bcc2);
   res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
   if (res < 0){
     perror("Check your connection");
@@ -384,11 +386,11 @@ int llread(int fd, char *frame)
   }
 
   //Send receiver ready
-  char receiver_ready[5];
+  char* receiver_ready = NULL;
   control = control << 1;
   control = control ^ 0x80;
   unsigned char recReadyByte = C_RR | control;
-  buildControlFrame(recReadyByte, receiver_ready);
+  buildControlFrame(recReadyByte, &receiver_ready);
   printf("    Sending RR = 0x%02x\n", recReadyByte);
   if (write(fd, receiver_ready, CP_LENGTH) <= 0)
   {
@@ -420,8 +422,8 @@ int llclose(int fileDescriptor, int caller)
     return -1;
   }
 
-  char disc_frame[5];
-  buildControlFrame(C_DISC, disc_frame);
+  char* disc_frame = NULL;
+  buildControlFrame(C_DISC, &disc_frame);
   if (caller == TRANSMITTER)
   {
     return llcloseTransmitter(&fileDescriptor, disc_frame);
@@ -451,8 +453,8 @@ int llcloseTransmitter(const int *fileDescriptor, char *disc_frame)
   }else{
     printf("    DISC Sent and DISC Received, Sending UA");
 
-    char ua_frame[5];
-    buildControlFrame(C_UA, ua_frame);
+    char* ua_frame = NULL;
+    buildControlFrame(C_UA, &ua_frame);
 
     if (write(*fileDescriptor, ua_frame, CP_LENGTH) < 0)
     {

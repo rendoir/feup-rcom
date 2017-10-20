@@ -21,7 +21,7 @@ int main(int argc, char** argv)
   }
 
 	char* myBuffer = "ola";
-	if (llwrite(sp_fd,myBuffer,4) != 0){
+	if (llwrite(sp_fd,&myBuffer,4) != 0){
 		perror("Error writing data to serial port");
 		exit(-1);
 	}

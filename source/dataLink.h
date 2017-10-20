@@ -30,17 +30,17 @@ void alarm_handler();
 /**
 * Inserts a char in any given index of the array.
 */
-void insertValueAtPos(size_t pos, char value, char *array, int length);
+void insertValueAtPos(size_t pos, char value, char ** array, int length);
 
 /**
  * Makes the Frame for sender/receiver
  */
-void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2);
+void buildFrame(char **frame, char **buffer, unsigned length, unsigned char bcc2);
 
 /**
 * Makes a control/supervision frame with the given control byte/field.
 */
-void buildControlFrame(char controlByte, char *frame);
+void buildControlFrame(char controlByte, char **frame);
 
 /**
 * Reads a control frame from the file descriptor and returns the current state.
@@ -77,14 +77,14 @@ int llopenReceiver(int fileDescriptor);
 /*
  * Do Stuffing of Buffer
  */
-int stuffingBuffer(char* bufferString, unsigned *size, char *bcc2);
+int stuffingBuffer(char** buffer, unsigned *size, char *bcc2);
 
 /**
 * Writes a buffer array to the fileDescriptor.
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char *buffer, unsigned length);
+int llwrite(int fileDescriptor, char **buffer, unsigned size);
 
 /**
 * A method to read from the file descriptor into the buffer (frame).
