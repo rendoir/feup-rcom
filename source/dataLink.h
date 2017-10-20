@@ -84,7 +84,7 @@ int stuffingBuffer(char** buffer, unsigned *size, char *bcc2);
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char **buffer, unsigned size);
+int llwrite(int fileDescriptor, char *buffer, unsigned size);
 
 /**
 * A method to read from the file descriptor into the buffer (frame).

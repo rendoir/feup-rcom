@@ -185,7 +185,7 @@ int sendImportantFrame(int fd, char* frame, int length){
     if (flag){
       alarm(TIME_OUT);
       flag=0;
-      printf("Writing to serial port\n");
+      printf("Writing to serial port fd=%d\n",fd);
       res = write(fd,frame,length);
       if (res > 0){
         printf("Written %d bytes to serial port\n",res);
@@ -223,7 +223,7 @@ int sendImportantFrame(int fd, char* frame, int length){
 /**
 * Opens/establish the connection.
 * when caller is TRANSMITTER
-* Return: 0 if success, negative on error.
+* Return: fd if success, negative on error.
 */
 int llopenTransmitter(int fileDescriptor)
 {
@@ -237,13 +237,13 @@ int llopenTransmitter(int fileDescriptor)
     return -1;
   }
   printf("\n<LLOPEN/>\n");
-  return 0;
+  return fileDescriptor;
 }
 
 /**
 * Opens/establish the connection.
 * when caller is RECEIVER
-* Return: 0 if success, negative on error.
+* Return: fd if success, negative on error.
 */
 int llopenReceiver(int fileDescriptor)
 {
@@ -266,7 +266,7 @@ int llopenReceiver(int fileDescriptor)
     printf("    UA Sent\n");
   }
   printf("\n<LLOPEN/>\n");
-  return 0;
+  return fileDescriptor;
 }
 
 /*------------------------------------*/
@@ -304,20 +304,23 @@ int stuffingBuffer(char** buffer, unsigned *size, char *bcc2)
 * length - Length of the array to send
 * Note: The buffer will be processed with byte stuffing before being sent.
 */
-int llwrite(int fileDescriptor, char **buffer, unsigned size)
+int llwrite(int fileDescriptor, char *buffer, unsigned size)
 {
   printf("<LLWRITE>\n");
   char bcc2 = 0;
   int res;
   //do stuffing of buffer
-  stuffingBuffer(buffer, &size, &bcc2);
+  /*
+  stuffingBuffer(&buffer, &size, &bcc2);
 
   printf("    BCC and byte stuffing complete\n");
   int sizeOfFrame = (size + 6) * sizeof(char);
   char *frame = malloc(sizeOfFrame);
 
-  buildFrame(&frame, buffer, size, bcc2);
-  res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
+  buildFrame(&frame, buffer, size, bcc2);*/
+
+  //res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
+  res = sendImportantFrame(fileDescriptor,buffer,size);
   if (res < 0){
     perror("Check your connection");
     return -1;
