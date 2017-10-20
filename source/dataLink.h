@@ -2,7 +2,6 @@
 #define DATA_LINK_H
 
 #include "serialPort.h"
-#include "string.h"
 
 #define FLAG 0x7e // delimiter flag
 #define A 0X03    // address
@@ -80,7 +79,7 @@ int llopenReceiver(int fileDescriptor);
 /*
  * Do Stuffing of Buffer
  */
-int stuffingBuffer(String *bufferString, unsigned *size, char *bcc2);
+int stuffingBuffer(char* bufferString, unsigned *size, char *bcc2);
 
 /**
 * Writes a buffer array to the fileDescriptor.

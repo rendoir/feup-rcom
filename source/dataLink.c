@@ -34,6 +34,7 @@ void insertValueAtPos(size_t pos, char value, char *array, int length)
  */
 void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
 {
+  printf("<BUILD_FRAME>\n");
   frame[0] = FLAG;
   frame[1] = A;
   frame[2] = (char)(writeCounter++ % 2) << 6;
@@ -41,6 +42,7 @@ void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
   memcpy(&frame[4], buffer, length);
   frame[length + 4] = bcc2;
   frame[length + 5] = FLAG;
+  printf("</BUILD_FRAME>\n");
 }
 
 /*------------------------------------*/
@@ -54,11 +56,13 @@ void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
 */
 void buildControlFrame(char controlByte, char *frame)
 {
+  printf("<BUILD_CONTROL_FRAME>\n");
   frame[0] = FLAG;
   frame[1] = A;
   frame[2] = controlByte;
   frame[3] = frame[1] ^ frame[2];
   frame[4] = FLAG;
+  printf("</BUILD_CONTROL_FRAME>\n");
 }
 
 /**
@@ -234,18 +238,19 @@ int llopenReceiver(int fileDescriptor)
 /*------------------------------------*/
 /*------------------------------------*/
 
-int stuffingBuffer(String *bufferString, unsigned *size, char *bcc2)
+int stuffingBuffer(char* buffer, unsigned *size, char *bcc2)
 {
   size_t i;
-  char *buffer = (*bufferString).buffer;
+  size_t allocatedSpace = *size;
   for (i = 0; i < *size; i++)
   {
     *bcc2 = *bcc2 ^ buffer[i];
     if (buffer[i] == 0x7e || buffer[i] == 0x7d)
     {
-      if (*size >= (*bufferString).allocatedSpace)
+      if (*size >= allocatedSpace)
       {
-        doubleMemoryAllocated(bufferString);
+        allocatedSpace = *size * 2;
+        buffer = realloc(buffer,allocatedSpace);
       }
       insertValueAtPos(i, ESCAPE_CHAR, buffer, *size);
       (*size)++;
@@ -258,8 +263,10 @@ int stuffingBuffer(String *bufferString, unsigned *size, char *bcc2)
 }
 
 char sendInfoFrameAndWait(int fileDescriptor, char *frame, int sizeOfFrame){
+  printf("<SEND_INFO_FRAME_AND_WAIT>\n");
   int res; //Used to store the return of write() and read() calls.
   alarm_tries = 1;
+  flag=1;
   char control = frame[2] << 1;
   control = control ^ 0x80;
   char recReadyByte = C_RR | control;
@@ -288,6 +295,7 @@ char sendInfoFrameAndWait(int fileDescriptor, char *frame, int sizeOfFrame){
     }
   }
   return -2;
+  printf("</SEND_INFO_FRAME_AND_WAIT>\n");
 }
 
 /**
@@ -299,18 +307,14 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
 {
   printf("<LLWRITE>\n");
   char bcc2 = 0;
-  String *bufferString = NULL;
-  init_string(bufferString, buffer, size);
-
   //do stuffing of buffer
-  stuffingBuffer(bufferString, &size, &bcc2);
+  stuffingBuffer(buffer, &size, &bcc2);
 
   printf("    BCC and byte stuffing complete\n");
   int sizeOfFrame = (size + 6) * sizeof(char);
   char *frame = malloc(sizeOfFrame);
 
   buildFrame(frame, buffer, size, bcc2);
-  destroy(bufferString);
 
   if (sendInfoFrameAndWait(fileDescriptor,frame,sizeOfFrame) == -2){
     printf("MAX_TRIES achieved\n");
