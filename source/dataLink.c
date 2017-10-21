@@ -228,7 +228,6 @@ int sendImportantFrame(int fd, char* frame, int length){
 int llopenTransmitter(int fileDescriptor)
 {
   int res;
-  printf("\n<LLOPEN>\n");
   char *set = NULL;
   buildControlFrame(C_SET, &set);
   res = sendImportantFrame(fileDescriptor,set,5);
