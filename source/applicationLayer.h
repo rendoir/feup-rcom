@@ -51,4 +51,7 @@ void buildStartFrame(ApplicationLayer *app, ControlFrame *frame);
 //Receiver
 int receive(ApplicationLayer *app);
 
+//Utils
+void printUsage();
+
 #endif //APP_LAYER_H

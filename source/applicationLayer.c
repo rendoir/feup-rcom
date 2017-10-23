@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static long serial_number = 0;
+//static long serial_number = 0;
 
 int main(int argc, char** argv) {
   ApplicationLayer app;
@@ -53,21 +53,24 @@ void run(ApplicationLayer *app){
   if(initConnection(app) < 0)
     exit(1);
   if(app->mode == SENDER) {
-    sendData(app);
+	readFileData(app);
+    send(app);
   } else if (app->mode == RECEIVER) {
-    receiveData(app);
+    receive(app);
   }
   if(closeConnection(app) < 0)
     exit(1);
 }
 
 int initConnection(ApplicationLayer *app) {
-  app->sp_fd = llopen(app->port, app->mode);
-  return app->sp_fd;
+  //app->sp_fd = llopen(app->port, app->mode);
+  //return app->sp_fd;
+	return 1;
 }
 
 int closeConnection(ApplicationLayer *app) {
-  return llclose(app->sp_fd, app->mode);
+  //return llclose(app->sp_fd, app->mode);
+  return 0;
 }
 
 //Sender
@@ -92,27 +95,48 @@ int readFileData(ApplicationLayer *app) {
 int send(ApplicationLayer *app){
   ControlFrame control_frame;
   buildStartFrame(app, &control_frame);
+  //return llwrite(app->sp_fd, control_frame.frame);
+  return 0;
 }
 
 void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
-  control_frame->control = CONTROL_START;
-  control_frame->file_size = app->file_size;
-  control_frame->file_name = app->file_path;
-  int size_of_file_size = sizeof(control_frame->file_size) + 1;
-  int size_of_file_name = strlen(control_frame->file_name);
-  control_frame->frame = malloc(5 + size_of_file_size + size_of_file_name);
-  control_frame->frame[0] = control_frame->control;
-  control_frame->frame[1] = TYPE_FILE_SIZE;
-  control_frame->frame[2] = size_of_file_size;
+  frame->control = CONTROL_START;
+  frame->file_size = app->file_size;
+  frame->file_name = app->file_path;
+  int size_of_file_size = sizeof(frame->file_size) + 1;
+  int size_of_file_name = strlen(frame->file_name);
+  frame->frame = malloc(5 + size_of_file_size + size_of_file_name);
+  frame->frame[0] = frame->control;
+  frame->frame[1] = TYPE_FILE_SIZE;
+  frame->frame[2] = size_of_file_size;
   char* file_size_str = malloc(size_of_file_size);
-  sprintf(file_size_str, "%d", control_frame->file_size);
-  int i;
-  for(i = 3; i < 3 + size_of_file_size; i++) {
-    //TODO
+  sprintf(file_size_str, "%d", frame->file_size);
+  int j = 0;
+  for (int i = 3; i < 3 + size_of_file_size; i++) {
+	  frame->frame[i] = file_size_str[j];
+	  j++;
   }
+  frame->frame[3 + size_of_file_size] = TYPE_FILE_NAME;
+  frame->frame[4 + size_of_file_size] = size_of_file_name;
+  char* file_name_str = malloc(size_of_file_name);
+  sprintf(file_name_str, "%s", frame->file_name);
+  j = 0;
+  for (int i = 5 + size_of_file_size; i < 5 + size_of_file_size + size_of_file_name; i++) {
+	  frame->frame[i] = file_name_str[j];
+	  j++;
+  }
+
+  //Debug
+  printf("Frame:\n");
+  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++) {
+	  printf("%c", frame->frame[i]);
+  }
+  printf("\n");
+
 }
 
 //Receiver
 int receive(ApplicationLayer *app) {
 //TODO
+	return 0;
 }
