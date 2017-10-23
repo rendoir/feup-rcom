@@ -35,15 +35,15 @@ void insertValueAtPos(size_t pos, char value, char ** array, int length)
 void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
 {
   printf("<BUILD_FRAME>\n");
-  (frame)[0] = FLAG;
-  (frame)[1] = A;
-  (frame)[2] = (char)(writeCounter++ % 2) << 6;
-  (frame)[3] = (frame)[1] ^ (frame)[2];
+  frame[0] = FLAG;
+  frame[1] = A;
+  frame[2] = (char)(writeCounter++ % 2) << 6;
+  frame[3] = frame[1] ^ frame[2];
   printf("    Copying buffer to frame\n");
-  memcpy(&(frame)[4], buffer, length);
+  memcpy(&(frame[4]), buffer, length);
   printf("    Memory copied\n");
-  (frame)[length + 4] = bcc2;
-  (frame)[length + 5] = FLAG;
+  frame[length + 4] = bcc2;
+  frame[length + 5] = FLAG;
   printf("</BUILD_FRAME>\n");
 }
 
