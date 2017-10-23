@@ -1,6 +1,7 @@
 #ifdef LINK_LAYER_H
 #define LINK_LAYER_H
 
+#include <stdlib.h>
 #include "macros.h"
 
 /**
@@ -32,9 +33,16 @@ void byteStuffing(char** data, int* data_size);
 void byteUnstuffing(char** data, int* data_size);
 
 /**
-* Inserts a value at a given position of the array
+* Inserts a value at a given position of the array.
+* Increments array_size by 1;
 */
-void insertValueAt(char value, char* array, int index, int array_size);
+void insertValueAt(char value, char* array, int index, int *array_size);
+
+/**
+* Removes a value at a given position of the array.
+* Decrements array_size by 1;
+*/
+void removeValueAt(char* array, int index, int *array_size);
 
 /**
 * Opens/establishes the connection.
