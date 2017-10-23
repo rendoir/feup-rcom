@@ -6,11 +6,11 @@
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
-  readFileData(&app);
-  printFileData(&app);
+  run(&app);
   return 0;
 }
 
+//Common
 int initApp(ApplicationLayer *app, int argc, char** argv) {
   if(argc < 3 || argc > 4)
     printUsage();
@@ -35,28 +35,8 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
   return 0;
 }
 
-int readFileData(ApplicationLayer *app) {
-  FILE *file_ptr;
-  long long file_length;
-
-  file_ptr = fopen(app->file_path, "rw");
-  fseek(file_ptr, 0, SEEK_END);
-  file_length = ftell(file_ptr);
-  rewind(file_ptr);
-
-  app->file_data = malloc((file_length + 1));
-  fread(app->file_data, file_length, 1, file_ptr);
-  fclose(file_ptr);
-  app->file_data[file_length] = '\0';
-
-  return 0;
-}
-
-int printFileData(ApplicationLayer *app) {
-  printf("Print\n");
-  printf("Data: %s\n", app->file_data);
-
-  return 0;
+void printFileData(ApplicationLayer *app) {
+  printf("File data:\n%s\n", app->file_data);
 }
 
 void printUsage() {
@@ -65,4 +45,53 @@ void printUsage() {
   printf("    mode: \"sender\" or \"receiver\"\n");
   printf("    [file_path]: needed if the app works as a sender\n");
   exit(1);
+}
+
+void run(ApplicationLayer *app){
+  if(initConnection(app) < 0)
+    exit(1);
+  if(app->mode == SENDER) {
+    sendData(app);
+  } else if (app->mode == RECEIVER) {
+    receiveData(app);
+  }
+  if(closeConnection(app) < 0)
+    exit(1);
+}
+
+int initConnection(ApplicationLayer *app) {
+  app->sp_fd = llopen(app->port, app->mode);
+  return app->sp_fd;
+}
+
+int closeConnection(ApplicationLayer *app) {
+  return llclose(app->sp_fd, app->mode);
+}
+
+//Sender
+int readFileData(ApplicationLayer *app) {
+  FILE *file_ptr;
+  long long file_length;
+
+  file_ptr = fopen(app->file_path, "rb");
+  fseek(file_ptr, 0, SEEK_END);
+  file_length = ftell(file_ptr);
+  rewind(file_ptr);
+
+  app->file_data = malloc((file_length + 1));
+  fread(app->file_data, file_length, 1, file_ptr);
+  fclose(file_ptr);
+  app->file_data[file_length] = '\0';
+  app->file_size = file_length + 1;
+
+  return 0;
+}
+
+int sendData(ApplicationLayer *app){
+//TODO
+}
+
+//Receiver
+int receiveData(ApplicationLayer *app) {
+//TODO
 }
