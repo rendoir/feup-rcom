@@ -21,7 +21,7 @@
 #define C_REJ 0x01
 
 #define ESCAPE 0x7d
-#define XOR_ESCAPE 0x20
+#define STUFF_XOR 0x20
 
 #define SENDER 0
 #define RECEIVER 1

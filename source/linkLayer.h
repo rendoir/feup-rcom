@@ -1,6 +1,7 @@
 #ifdef LINK_LAYER_H
 #define LINK_LAYER_H
 
+#include "macros.h"
 
 /**
 * Alarm Handler
@@ -31,23 +32,28 @@ void byteStuffing(char** data, int* data_size);
 void byteUnstuffing(char** data, int* data_size);
 
 /**
+* Inserts a value at a given position of the array
+*/
+void insertValueAt(char value, char* array, int index, int array_size);
+
+/**
 * Opens/establishes the connection.
 * caller - Who called the function: SENDER or RECEIVER
-* Return: 0 if success, -1 if error.
+* Return: file descriptor;
 */
 int llopen(char* port, int caller);
 
 /**
 * Opens/establish the connection.
 * when caller is SENDER
-* Return: 0 if success, negative on error.
+* Return: file descriptor;
 */
 int llopenSender(int sp_fd);
 
 /**
 * Opens/establish the connection.
 * when caller is RECEIVER
-* Return: 0 if success, negative on error.
+* Return: file descriptor;
 */
 int llopenReceiver(int fileDescriptor);
 
@@ -64,8 +70,14 @@ int llwrite(int sp_fd, char* data, int data_size);
 */
 int llclose(int sp_fd, int caller);
 
+/**
+* Closes the connection. Sends DISC, Waits DISC, Sends UA.
+*/
 int llcloseSender(int sp_fd);
 
+/**
+* Closes the connection. Receives DISC, Sends DISC,Receives UA.
+*/
 int llcloseReceiver(int sp_fd);
 
 #endif // LINK_LAYER_H
