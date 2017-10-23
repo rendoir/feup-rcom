@@ -27,7 +27,7 @@ unsigned char getAddress(int caller, char control_field)
   }
 }
 
-unsigned char getBCC2(char *data, int data_size)
+unsigned char getBCC(char *data, int data_size)
 {
   unsigned char bcc = 0;
   int i;
@@ -56,7 +56,7 @@ void buildDataFrame(char **frame, char *data, int data_size, int *frame_size)
   (*frame)[2] = ((sequence_number++) % 2) << 6;
   (*frame)[3] = (*frame)[1] ^ (*frame)[2];
   memcpy(&((*frame)[4]), data, data_size);
-  (*frame)[4 + data_size] = getBCC2(data, data_size);
+  (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
   byteStuffing(frame, frame_size);
 }

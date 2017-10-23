@@ -45,6 +45,11 @@ void byteUnstuffing(char **frame, int *frame_size);
 unsigned char getAddress(int caller, char control_field);
 
 /**
+ * Returns the Block Check Character of the data array.
+ * */
+unsigned char getBCC(char *data, int data_size);
+
+/**
 * Inserts a value at a given position of the array.
 * Increments array_size by 1;
 */
