@@ -110,7 +110,7 @@ void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
   frame->frame[1] = TYPE_FILE_SIZE;
   frame->frame[2] = size_of_file_size;
   char* file_size_str = malloc(size_of_file_size);
-  sprintf(file_size_str, "%d", frame->file_size);
+  sprintf(file_size_str, "%04d", frame->file_size);
   int j = 0;
   for (int i = 3; i < 3 + size_of_file_size; i++) {
 	  frame->frame[i] = file_size_str[j];
@@ -129,7 +129,7 @@ void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
   //Debug
   printf("Frame:\n");
   for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++) {
-	  printf("%c", frame->frame[i]);
+	  printf("%d\n", frame->frame[i]);
   }
   printf("\n");
 
