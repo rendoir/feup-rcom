@@ -1,0 +1,6 @@
+Functions:
+  - should be written in camelCase
+Variables:
+  - use underscore, ex : char read_char;
+Constants:
+  - all capital.
