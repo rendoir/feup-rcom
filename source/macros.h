@@ -20,4 +20,7 @@
 #define C_RR 0x05
 #define C_REJ 0x01
 
+#define ESCAPE 0x7d
+#define XOR_ESCAPE 0x20
+
 #endif
