@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-//static long serial_number = 0;
+static long serial_number = 0;
 
 int main(int argc, char** argv) {
   ApplicationLayer app;
@@ -17,6 +17,7 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
   if(argc < 3 || argc > 4)
     printUsage();
 
+  app->bytes_processed = 0;
   app->port = malloc(12);
   sprintf(app->port, "/dev/ttyS%s", argv[1]);
 
@@ -65,7 +66,7 @@ void run(ApplicationLayer *app){
 int initConnection(ApplicationLayer *app) {
   //app->sp_fd = llopen(app->port, app->mode);
   //return app->sp_fd;
-	return 1;
+  return 1;
 }
 
 int closeConnection(ApplicationLayer *app) {
@@ -94,23 +95,26 @@ int readFileData(ApplicationLayer *app) {
 
 int send(ApplicationLayer *app){
   ControlFrame control_frame;
+  DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
-  //return llwrite(app->sp_fd, control_frame.frame);
+  while (app->bytes_processed < app->file_size)
+	  buildDataFrame(app, &data_frame);
+  buildEndFrame(app, &control_frame);
   return 0;
 }
 
-void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
-  frame->control = CONTROL_START;
+void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control) {
+  frame->control = control;
   frame->file_size = app->file_size;
   frame->file_name = app->file_path;
   int size_of_file_size = sizeof(frame->file_size) + 1;
-  int size_of_file_name = strlen(frame->file_name);
+  int size_of_file_name = strlen(frame->file_name) + 1;
   frame->frame = malloc(5 + size_of_file_size + size_of_file_name);
   frame->frame[0] = frame->control;
   frame->frame[1] = TYPE_FILE_SIZE;
   frame->frame[2] = size_of_file_size;
   char* file_size_str = malloc(size_of_file_size);
-  sprintf(file_size_str, "%04d", frame->file_size);
+  sprintf(file_size_str, "%08lld", frame->file_size);
   int j = 0;
   for (int i = 3; i < 3 + size_of_file_size; i++) {
 	  frame->frame[i] = file_size_str[j];
@@ -127,12 +131,39 @@ void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
   }
 
   //Debug
-  printf("Frame:\n");
-  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++) {
-	  printf("%d\n", frame->frame[i]);
-  }
+  printf("\nControl frame:\n");
+  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++) 
+	  printf("%d ", frame->frame[i]);
   printf("\n");
 
+}
+
+void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
+	frame->control = CONTROL_DATA;
+	frame->serial = serial_number++ % 255;
+	long long bytes_left = app->file_size - app->bytes_processed;
+	long long bytes_to_write;
+	if (bytes_left < BYTES_PER_DATA_PACKET)
+		bytes_to_write = bytes_left;
+	else bytes_to_write = BYTES_PER_DATA_PACKET;
+	frame->l2 = bytes_to_write / 256;
+	frame->l1 = bytes_to_write % 256;
+	frame->data = malloc(bytes_to_write);
+	for (int i = 0; i < bytes_to_write; i++)
+		frame->data[i] = app->file_data[app->bytes_processed++];
+
+	frame->frame = malloc(4 + bytes_to_write);
+	frame->frame[0] = frame->control;
+	frame->frame[1] = frame->l2;
+	frame->frame[2] = frame->l1;
+	for (int i = 4; i < 4 + bytes_to_write; i++)
+		frame->frame[i] = frame->data[i];
+
+	//Debug
+	printf("\nData frame:\n");
+	for (int i = 0; i < 4 + bytes_to_write; i++)
+		printf("%d ", frame->frame[i]);
+	printf("\n");
 }
 
 //Receiver
