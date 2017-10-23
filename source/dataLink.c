@@ -32,18 +32,18 @@ void insertValueAtPos(size_t pos, char value, char ** array, int length)
 /**
  * Makes the Frame for sender/receiver
  */
-void buildFrame(char **frame, char **buffer, unsigned length, unsigned char bcc2)
+void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2)
 {
   printf("<BUILD_FRAME>\n");
-  (*frame)[0] = FLAG;
-  (*frame)[1] = A;
-  (*frame)[2] = (char)(writeCounter++ % 2) << 6;
-  (*frame)[3] = (*frame)[1] ^ (*frame)[2];
+  (frame)[0] = FLAG;
+  (frame)[1] = A;
+  (frame)[2] = (char)(writeCounter++ % 2) << 6;
+  (frame)[3] = (frame)[1] ^ (frame)[2];
   printf("    Copying buffer to frame\n");
-  memcpy(&(*frame)[4], buffer, length);
+  memcpy(&(frame)[4], buffer, length);
   printf("    Memory copied\n");
-  (*frame)[length + 4] = bcc2;
-  (*frame)[length + 5] = FLAG;
+  (frame)[length + 4] = bcc2;
+  (frame)[length + 5] = FLAG;
   printf("</BUILD_FRAME>\n");
 }
 
@@ -194,11 +194,15 @@ int sendImportantFrame(int fd, char* frame, int length){
           printf("UA received\n");
           alarm(0);
           break;
-        }else if ((controlField & C_RR) == C_RR){
+        }else if (controlField == C_DISC){
+          printf("DISC received\n");
+          alarm(0);
+          break;
+        }else if (controlField == C_RR){
           printf("RR received\n");
           alarm(0);
           break;
-        }else if ((controlField & C_REJ) == C_REJ){
+        }else if (controlField == C_REJ){
           printf("REJ received\n");
           alarm(0);
           alarm_tries = 1;
@@ -316,7 +320,7 @@ int llwrite(int fileDescriptor, char *buffer, unsigned size)
   int sizeOfFrame = (size + 6) * sizeof(char);
   char *frame = malloc(sizeOfFrame);
 
-  buildFrame(&frame, &buffer, size, bcc2);
+  buildFrame(frame, buffer, size, bcc2);
 
   res = sendImportantFrame(fileDescriptor,frame,sizeOfFrame);
   if (res < 0){
@@ -446,6 +450,7 @@ int llclose(int fileDescriptor, int caller)
 */
 int llcloseTransmitter(const int *fileDescriptor, char *disc_frame)
 {
+  printf("Sending DISC\n");
   char controlByte = sendImportantFrame(*fileDescriptor, disc_frame, CP_LENGTH);
   if (controlByte < 0)
   {

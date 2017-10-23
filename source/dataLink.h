@@ -35,7 +35,7 @@ void insertValueAtPos(size_t pos, char value, char ** array, int length);
 /**
  * Makes the Frame for sender/receiver
  */
-void buildFrame(char **frame, char **buffer, unsigned length, unsigned char bcc2);
+void buildFrame(char *frame, char *buffer, unsigned length, unsigned char bcc2);
 
 /**
 * Makes a control/supervision frame with the given control byte/field.
