@@ -154,10 +154,11 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 
 	frame->frame = malloc(4 + bytes_to_write);
 	frame->frame[0] = frame->control;
-	frame->frame[1] = frame->l2;
-	frame->frame[2] = frame->l1;
+	frame->frame[1] = frame->serial;
+	frame->frame[2] = frame->l2;
+	frame->frame[3] = frame->l1;
 	for (int i = 4; i < 4 + bytes_to_write; i++)
-		frame->frame[i] = frame->data[i];
+		frame->frame[i] = frame->data[i - 4];
 
 	//Debug
 	printf("\nData frame:\n");
