@@ -29,4 +29,6 @@
 #define BAUDRATE B38400
 #define DEFAULT_SERIAL_PATH "/dev/ttyS"
 
+#define MAX_TRIES 3
+
 #endif
