@@ -11,6 +11,6 @@
 //};
 
 
-int setNewSIGHandler(unsigned sig, void (*alarm_hanlder)(int));
+int setNewAlarmHandler(void (*signal_hanlder)(int));
 
-int resetAlarmHandler(unsigned sig);
+int resetAlarmHandler();
