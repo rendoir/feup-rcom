@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdlib.h>
 
+static long serial_number = 0;
+
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
@@ -87,11 +89,30 @@ int readFileData(ApplicationLayer *app) {
   return 0;
 }
 
-int sendData(ApplicationLayer *app){
-//TODO
+int send(ApplicationLayer *app){
+  ControlFrame control_frame;
+  buildStartFrame(app, &control_frame);
+}
+
+void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) {
+  control_frame->control = CONTROL_START;
+  control_frame->file_size = app->file_size;
+  control_frame->file_name = app->file_path;
+  int size_of_file_size = sizeof(control_frame->file_size) + 1;
+  int size_of_file_name = strlen(control_frame->file_name);
+  control_frame->frame = malloc(5 + size_of_file_size + size_of_file_name);
+  control_frame->frame[0] = control_frame->control;
+  control_frame->frame[1] = TYPE_FILE_SIZE;
+  control_frame->frame[2] = size_of_file_size;
+  char* file_size_str = malloc(size_of_file_size);
+  sprintf(file_size_str, "%d", control_frame->file_size);
+  int i;
+  for(i = 3; i < 3 + size_of_file_size; i++) {
+    //TODO
+  }
 }
 
 //Receiver
-int receiveData(ApplicationLayer *app) {
+int receive(ApplicationLayer *app) {
 //TODO
 }
