@@ -49,6 +49,7 @@ void buildControlFrame(char *frame, int caller, char control_field)
 
 void buildDataFrame(char **frame, char *data, int data_size, int *frame_size)
 {
+  printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   *frame_size = data_size + 6;
   (*frame) = (char *)malloc(*frame_size * sizeof(char));
   (*frame)[0] = FLAG;
@@ -58,11 +59,21 @@ void buildDataFrame(char **frame, char *data, int data_size, int *frame_size)
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
+
+  int i = 0;
+  for(i = 0; i < *frame_size; i++){
+    printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
+  }
   byteStuffing(frame, frame_size);
+  for(i = 0; i < *frame_size; i++){
+    printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
+  }
+  printf("\nDEBUG: END BUILDDATAFRAME\n");
 }
 
 void byteStuffing(char **frame, int *frame_size)
 {
+  printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
   int allocated_space = *frame_size;
   for (i = 1; i < *frame_size - 1; i++)
@@ -80,10 +91,12 @@ void byteStuffing(char **frame, int *frame_size)
       i++;
     }
   }
+  printf("\nDEBUG: END BYTESTUFFING\n");
 }
 
 void byteUnstuffing(char **frame, int *frame_size)
 {
+  printf("\nDEBUG: START BYTEUNSTUFFING\n");
   int i;
   for (i = 0; i < *frame_size; i++)
   {
@@ -99,25 +112,50 @@ void byteUnstuffing(char **frame, int *frame_size)
   }
   // Realloc to free unused memory
   realloc(*frame, *frame_size * sizeof(char));
+  printf("\nDEBUG: END BYTEUNSTUFFING\n");
 }
 
-void insertValueAt(char value, char *array, int index, int *array_size)
-{
-  int i;
-  for (i = (*array_size) - 1; i > index; i--)
-  {
-    array[i + 1] = array[i];
+/*------------------------------------*/
+/*------------------------------------*/
+/*---------------LLOPEN---------------*/
+/*------------------------------------*/
+/*------------------------------------*/
+
+
+int llopen(char *port, int caller){
+  printf("\nDEBUG: START LLOPEN\n");
+  int fileDescriptor = openSerialPort(port, caller);
+  if(fileDescriptor < 0){
+    return -1;
   }
-  array[index] = value;
-  (*array_size)++;
+  if(setNewSettings(fileDescriptor, caller) < 0){
+    return -1;
+  }
+
+  int returnValue;
+  if (caller == TRANSMITTER) {
+    returnValue = llopenTransmitter(fileDescriptor);
+  } else if (caller == RECEIVER) {
+    returnValue = llopenReceiver(fileDescriptor);
+  }
+
+  printf("\nDEBUG: END LLOPEN\n");
+  return returnValue;
 }
 
-void removeValueAt(char *array, int index, int *array_size)
-{
-  int i;
-  for (i = index; i < (*array_size) - 1; i++)
-  {
-    array[i] = array[i + 1];
-  }
-  (*array_size)--;
+int llopenSender(int fileDescriptor){
+  printf("\nDEBUG: START LLOPENSENDER\n");
+  char frame[5];
+  buildControlFrame(frame, TRANSMITTER, C_SET);
+
+  printf("\nDEBUG: END LLOPENSENDER\n");
+  return 0;
+}
+
+int llopenReceiver(int fileDescriptor){
+  printf("\nDEBUG: START LLOPENRECEIVER\n");
+  char frame[5];
+  buildControlFrame(frame, RECEIVER, C_UA);
+
+  printf("\nDEBUG: END LLOPENRECEIVER\n");
 }
