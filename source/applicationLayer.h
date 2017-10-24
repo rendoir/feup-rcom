@@ -64,5 +64,6 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
 
 //Utils
 void printUsage();
+void test(ApplicationLayer *app);
 
 #endif //APP_LAYER_H

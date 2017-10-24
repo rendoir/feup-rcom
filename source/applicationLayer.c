@@ -8,7 +8,8 @@ static long serial_number = 0;
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
-  run(&app);
+  //run(&app);
+  test(&app);
   return 0;
 }
 
@@ -42,23 +43,15 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
 }
 
 void printFileData(ApplicationLayer *app) {
-  printf("File data:\n%s\n", app->file_data);
-}
-
-void printUsage() {
-  printf("Usage: app port_number mode [file_path]\n");
-  printf("    port_number: the serial port number to use\n");
-  printf("    mode: \"sender\" or \"receiver\"\n");
-  printf("    [file_path]: needed if the app works as a sender\n");
-  printf("    [bytes_per_data_packet]: defaults to 1024\n");
-  exit(1);
+  for(int i = 0; i < app->file_size; i++)
+    printf("%d ", app->file_data[i]);
 }
 
 void run(ApplicationLayer *app){
   if(initConnection(app) < 0)
     exit(1);
   if(app->mode == SENDER) {
-	readFileData(app);
+	  readFileData(app);
     send(app);
   } else if (app->mode == RECEIVER) {
     receive(app);
@@ -223,4 +216,31 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   for (int i = 0; i < frame->data_size; i++)
   	printf("%d ", frame->data[i]);
   printf("\n");
+}
+
+//Utils
+void printUsage() {
+  printf("Usage: app port_number mode [file_path]\n");
+  printf("    port_number: the serial port number to use\n");
+  printf("    mode: \"sender\" or \"receiver\"\n");
+  printf("    [file_path]: needed if the app works as a sender\n");
+  printf("    [bytes_per_data_packet]: defaults to 1024\n");
+  exit(1);
+}
+
+//Debug
+void test(ApplicationLayer *app) {
+  if(app->mode == SENDER) {
+    readFileData(app);
+    ControlFrame control_frame;
+    DataFrame	data_frame;
+    buildStartFrame(app, &control_frame);
+    disassembleControlFrame(app, &control_frame);
+    while (app->bytes_processed < app->file_size){
+      buildDataFrame(app, &data_frame);
+      disassembleDataFrame(app, &data_frame);
+    }
+    buildEndFrame(app, &control_frame);
+    disassembleControlFrame(app, &control_frame);
+  }
 }
