@@ -55,7 +55,7 @@ int openSerialPort(char* port, int caller){
     if (strcmp("/dev/ttyS0", serialName) && strcmp("/dev/ttyS1", serialName))
     {
       printf("Usage:\tnserial SerialPort\n\tex: nserial /dev/ttyS1\n");
-      exit(1);
+      exit(-1);
     }
   }
   //Open serial port device for reading and writing and not as controlling tty

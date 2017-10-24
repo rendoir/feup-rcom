@@ -3,7 +3,19 @@
 
 #include <stdlib.h>
 #include <string.h> //used for memcpy
+#include "serialPort.h"
 #include "macros.h"
+
+#define MAX_SIZE 1024
+
+struct linkLayer {
+    char port[20];
+    int baudRate;
+    unsigned int sequenceNumber;
+    unsigned int timeout;
+    unsigned int numTransmissions;
+    char frame[MAX_SIZE];
+} linkLayer;
 
 /**
 * Alarm Handler
@@ -50,12 +62,6 @@ unsigned char getAddress(int caller, char control_field);
 unsigned char getBCC(char *data, int data_size);
 
 /**
-* Inserts a value at a given position of the array.
-* Increments array_size by 1;
-*/
-void insertValueAt(char value, char *array, int index, int *array_size);
-
-/**
 * Opens/establishes the connection.
 * caller - Who called the function: SENDER or RECEIVER
 * Return: file descriptor;
@@ -75,12 +81,6 @@ int llopenReceiver(int fileDescriptor);
 * Return: file descriptor;
 */
 int llopenSender(int sp_fd);
-
-/**
-* Removes a value at a given position of the array.
-* Decrements array_size by 1;
-*/
-void removeValueAt(char *array, int index, int *array_size);
 
 /**
 * Builds the data frame.
