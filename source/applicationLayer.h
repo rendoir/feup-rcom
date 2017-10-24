@@ -23,23 +23,20 @@ typedef struct {
   //File
   char* file_path;
   char* file_data;
+  char* file_data_2;
   long long file_size;
   long long bytes_processed;
+  long long bytes_processed_2;
 } ApplicationLayer;
 
 typedef struct {
   char* frame;
-  char control;
   char* file_name;
   long long file_size;
 } ControlFrame;
 
 typedef struct {
   char* frame;
-  char control;
-  char serial;
-  char l2, l1;
-  int data_size;
   char* data;
 } DataFrame;
 
@@ -65,5 +62,7 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
 //Utils
 void printUsage();
 void test(ApplicationLayer *app);
+void printFileData(ApplicationLayer *app);
+void printFileData_2(ApplicationLayer *app);
 
 #endif //APP_LAYER_H
