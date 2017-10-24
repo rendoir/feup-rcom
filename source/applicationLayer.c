@@ -8,8 +8,8 @@ static long serial_number = 0;
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
-  //run(&app);
-  test(&app);
+  run(&app);
+  //test(&app);
   return 0;
 }
 
@@ -183,11 +183,11 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
   for(int i = 0; i < l1; i++)
     v1[i] = frame->frame[i + 3];
   app->file_size = atoll(v1);
-  char t2 = frame->frame[4 + l1];
-  char l2 = frame->frame[5 + l1];
+  char t2 = frame->frame[3 + l1];
+  char l2 = frame->frame[4 + l1];
   app->file_path = malloc(l2);
   for(int i = 0; i < l2; i++)
-    app->file_path[i] = frame->frame[i + 6 + l1];
+    app->file_path[i] = frame->frame[i + 5 + l1];
 
   //Debug
   printf("\nDisassembled control frame:\n");
