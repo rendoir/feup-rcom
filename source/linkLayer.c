@@ -169,7 +169,7 @@ int llopenReceiver(int fileDescriptor){
 
 
 int readControlFrame(int sp_fd, char address_expected, char expected_control_field, ControlStruct *control_struct){
-	Control_State state = START;
+	State state = START;
 	char char_read;
 	while(state != STOP){
 		read(sp_fd,&char_read,1);
@@ -183,19 +183,103 @@ int readControlFrame(int sp_fd, char address_expected, char expected_control_fie
 			case FLAG_REC:{
 				if (char_read == address_expected){
 					state = A_REC;
+					control_struct->address_field = char_read;
 				}else if (char_read != FLAG){
 					state = START;
 				}
 				break;
 			}
 			case A_REC:{
+				if (char_read == expected_control_field || char_read == C_REJ){
+					state = A_REC;
+					control_struct->control_field = char_read;
+				}else if (char_read != FLAG){
+					state = START;
+				}else{
+					state = FLAG_REC;
+				}
 				break;
 			}
 			case C_REC:{
-
+				if (char_read == control_struct->address_field ^ control_struct->control_field){
+					state = BCC_OK;
+				}else if (char_read != FLAG){
+					state = START;
+				}else{
+					state = FLAG_REC;
+				}
+				break;
 			}
-			case BCC_OK:{
+			case BCC1_OK:{
+				if (char_read == FLAG){
+					state = STOP;
+				}else{
+					state = START;
+				}
+				break;
+			}
+			default:{
+				printf("Reached unexpected state\n");
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
 
+int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct){
+	State state = START;
+	char read_char;
+	int num_flags_received = 0;
+	unsigned long frame_allocated_space = 7;
+	unsigned long frame_size = 0;
+	char *frame_received = malloc(frame_allocated_space);
+	while(num_flags_received < 2){
+		read(sp_fd,&read_char,1);
+		if (read_char == FLAG){
+			num_flags_received++;
+		}
+		if (frame_size >= frame_allocated_space){
+			frame_allocated_space = frame_allocated_space * 2;
+			if (realloc(frame_received,frame_allocated_space) == NULL){
+				perror("Error realloc memory for read data frame");
+			}
+		}
+		frame_received[frame_size++] = read_char;
+	}
+	if (frame_size < DATA_FRAME_MIN_SIZE){
+		perror("Data frame size should not be smaller than %d",DATA_FRAME_MIN_SIZE);
+		return -1;
+	}
+
+	byteUnstuffing(&frame_received, frame_size);
+	data_struct->allocated_space = 1;
+	data_struct->data = malloc(data_struct->allocated_space);
+
+
+	unsigned long data_index = 0;
+	while(state != STOP){
+		read(sp_fd,&read_char,1);
+		switch(state){
+			case START:{
+				break;
+			}
+			case FLAG_REC:{
+				break;
+			}
+			case A_REC:{
+				break;
+			}
+			case C_REC:{
+				break;
+			}
+			case BCC1_OK:{
+				break;
+			}
+			case READ_DATA:{
+
+				}
+				break;
 			}
 		}
 	}

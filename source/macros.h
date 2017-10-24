@@ -31,4 +31,6 @@
 
 #define MAX_TRIES 3
 
+#define DATA_FRAME_MIN_SIZE 7
+
 #endif

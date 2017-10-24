@@ -22,6 +22,7 @@ typedef struct {
 	char control_field;
 	char bcc1;
 	char* data;
+	unsigned long allocated_space;
 	char bcc2;
 } DataStruct;
 
@@ -31,9 +32,7 @@ typedef struct {
 	char bcc1;
 } ControlStruct;
 
-typedef enum {START,FLAG_REC,A_REC,C_REC,BCC1_OK,READ_DATA,BCC2_OK,STOP} Data_State;
-
-typedef enum {START,FLAG_REC,A_REC,C_REC,BCC_OK,STOP} Control_State;
+typedef enum {START,FLAG_REC,A_REC,C_REC,BCC1_OK,READ_DATA,STOP} State;
 
 /**
 * Alarm Handler
@@ -125,18 +124,18 @@ int llcloseReceiver(int sp_fd);
 
 /*
 * State Machine that analysis control frames received.
-* Returns 0 in case of success.
+* Returns 0 in case of success. -1 if reached unexpected state.
 * control_struct is filled with the frame read.
 */
-int readControlFrame(int sp_fd, char expected_control_field, ControlStruct *control_struct);
+int readControlFrame(int sp_fd, char expected_address, char expected_control_field, ControlStruct *control_struct);
 
 /*
 * State machine that analysis data frames received.
 * data_struct is filled with the frame read only if no errors detected and not duplicated.
 * Returns: 0 if no errors detected or if errors detected but duplicated -> should trigger a RR.
-* -1 if error in bcc2 -> should trigger a REJ.
+* -1 if error in bcc2 or incorrect size-> should trigger a REJ.
 */
-int readDataFrame(int sp_fd, char expected_seq_number, DataStruct *data_struct);
+int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct);
 
 /**
 * Writes frame_to_write to sp_fd.
