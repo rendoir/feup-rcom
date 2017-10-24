@@ -8,8 +8,7 @@ static long serial_number = 0;
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
-  //run(&app);
-  test(&app);
+  run(&app);
   return 0;
 }
 
@@ -43,8 +42,10 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
 }
 
 void printFileData(ApplicationLayer *app) {
+  printf("\nFile data sent:\n");
   for(int i = 0; i < app->file_size; i++)
     printf("%d ", app->file_data[i]);
+  printf("\n");
 }
 
 void run(ApplicationLayer *app){
@@ -101,13 +102,12 @@ int send(ApplicationLayer *app){
 }
 
 void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control) {
-  frame->control = control;
   frame->file_size = app->file_size;
   frame->file_name = app->file_path;
   int size_of_file_size = sizeof(frame->file_size) + 1;
   int size_of_file_name = strlen(frame->file_name) + 1;
   frame->frame = malloc(5 + size_of_file_size + size_of_file_name);
-  frame->frame[0] = frame->control;
+  frame->frame[0] = control;
   frame->frame[1] = TYPE_FILE_SIZE;
   frame->frame[2] = size_of_file_size;
   char* file_size_str = malloc(size_of_file_size);
@@ -136,24 +136,24 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
 }
 
 void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
-	frame->control = CONTROL_DATA;
-	frame->serial = serial_number++ % 255;
+	char control = CONTROL_DATA;
+	char serial = serial_number++ % 255;
 	long long bytes_left = app->file_size - app->bytes_processed;
 	long long bytes_to_write;
 	if (bytes_left < app->bytes_per_data_packet)
 		bytes_to_write = bytes_left;
 	else bytes_to_write = app->bytes_per_data_packet;
-	frame->l2 = bytes_to_write / 256;
-	frame->l1 = bytes_to_write % 256;
+	char l2 = bytes_to_write / 256;
+	char l1 = bytes_to_write % 256;
 	frame->data = malloc(bytes_to_write);
 	for (int i = 0; i < bytes_to_write; i++)
 		frame->data[i] = app->file_data[app->bytes_processed++];
 
 	frame->frame = malloc(4 + bytes_to_write);
-	frame->frame[0] = frame->control;
-	frame->frame[1] = frame->serial;
-	frame->frame[2] = frame->l2;
-	frame->frame[3] = frame->l1;
+	frame->frame[0] = control;
+	frame->frame[1] = serial;
+	frame->frame[2] = l2;
+	frame->frame[3] = l1;
 	for (int i = 4; i < 4 + bytes_to_write; i++)
 		frame->frame[i] = frame->data[i - 4];
 
@@ -176,22 +176,25 @@ int receive(ApplicationLayer *app) {
 }
 
 void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
-  frame->control = frame->frame[0];
+  char control = frame->frame[0];
   char t1 = frame->frame[1];
   char l1 = frame->frame[2];
   char* v1 = malloc(l1);
   for(int i = 0; i < l1; i++)
     v1[i] = frame->frame[i + 3];
   app->file_size = atoll(v1);
-  char t2 = frame->frame[4 + l1];
-  char l2 = frame->frame[5 + l1];
+  char t2 = frame->frame[3 + l1];
+  char l2 = frame->frame[4 + l1];
   app->file_path = malloc(l2);
   for(int i = 0; i < l2; i++)
-    app->file_path[i] = frame->frame[i + 6 + l1];
+    app->file_path[i] = frame->frame[i + 5 + l1];
+
+  if(control == CONTROL_START)
+    app->file_data = malloc(app->file_size);
 
   //Debug
   printf("\nDisassembled control frame:\n");
-  printf("%d %d %d ", frame->control, t1, l1);
+  printf("%d %d %d ", control, t1, l1);
   for (int i = 0; i < l1; i++)
   	printf("%d ", v1[i]);
   printf("%d %d ", t2, l2);
@@ -201,19 +204,21 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
 }
 
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
-  frame->control = frame->frame[0];
-  frame->serial = frame->frame[1];
-  frame->l2 = frame->frame[2];
-  frame->l1 = frame->frame[3];
-  frame->data_size = frame->l2 * 256 + frame->l1;
-  frame->data = malloc(frame->data_size);
-  for(int i = 0; i < frame->data_size; i++)
+  char control = frame->frame[0];
+  char serial = frame->frame[1];
+  char l2 = frame->frame[2];
+  char l1 = frame->frame[3];
+  char data_size = l2 * 256 + l1;
+  frame->data = malloc(data_size);
+  for(int i = 0; i < data_size; i++){
     frame->data[i] = frame->frame[i + 4];
+    app->file_data[app->bytes_processed++] = frame->data[i];
+  }
 
   //Debug
   printf("\nDisassembled data frame:\n");
-  printf("%d %d %d %d ", frame->control, frame->serial, frame->l2, frame->l1);
-  for (int i = 0; i < frame->data_size; i++)
+  printf("%d %d %d %d ", control, serial, l2, l1);
+  for (int i = 0; i < data_size; i++)
   	printf("%d ", frame->data[i]);
   printf("\n");
 }
@@ -226,21 +231,4 @@ void printUsage() {
   printf("    [file_path]: needed if the app works as a sender\n");
   printf("    [bytes_per_data_packet]: defaults to 1024\n");
   exit(1);
-}
-
-//Debug
-void test(ApplicationLayer *app) {
-  if(app->mode == SENDER) {
-    readFileData(app);
-    ControlFrame control_frame;
-    DataFrame	data_frame;
-    buildStartFrame(app, &control_frame);
-    disassembleControlFrame(app, &control_frame);
-    while (app->bytes_processed < app->file_size){
-      buildDataFrame(app, &data_frame);
-      disassembleDataFrame(app, &data_frame);
-    }
-    buildEndFrame(app, &control_frame);
-    disassembleControlFrame(app, &control_frame);
-  }
 }
