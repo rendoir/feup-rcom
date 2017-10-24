@@ -5,7 +5,9 @@ int main()
   return 0;
 }
 
-long sequence_number = 0;
+static char write_sequence_number = 0;
+static char read_sequence_number = 0;
+static char last_frame_accepted = 1;
 
 unsigned char getAddress(int caller, char control_field)
 {
@@ -38,23 +40,27 @@ unsigned char getBCC(char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrame(char *frame, int caller, char control_field)
+void buildControlFrame(char *frame, int caller, char control_field, long sequence_number)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
-  frame[2] = control_field;
+  if (sequence_number == NULL){
+	frame[2] = control_field;
+  }else{
+	frame[2] = ((sequence_number % 2) << 7) + control_field;
+  }
   frame[3] = frame[1] ^ frame[2];
   frame[4] = FLAG;
 }
 
-void buildDataFrame(char **frame, char *data, int data_size, int *frame_size)
+void buildDataFrame(char **frame, char *data, int data_size, int *frame_size, long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   *frame_size = data_size + 6;
   (*frame) = (char *)malloc(*frame_size * sizeof(char));
   (*frame)[0] = FLAG;
   (*frame)[1] = A_SENDER_COMMAND;
-  (*frame)[2] = ((sequence_number++) % 2) << 6;
+  (*frame)[2] = (char)((sequence_number) % 2) << 6;
   (*frame)[3] = (*frame)[1] ^ (*frame)[2];
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
@@ -145,8 +151,8 @@ int llopen(char *port, int caller){
 
 int llopenSender(int fileDescriptor){
   printf("\nDEBUG: START LLOPENSENDER\n");
-  char frame[5];
-  buildControlFrame(frame, TRANSMITTER, C_SET);
+  char set_frame[5];
+  buildControlFrame(set_frame, TRANSMITTER, C_SET, NULL);
 
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
@@ -154,8 +160,59 @@ int llopenSender(int fileDescriptor){
 
 int llopenReceiver(int fileDescriptor){
   printf("\nDEBUG: START LLOPENRECEIVER\n");
-  char frame[5];
-  buildControlFrame(frame, RECEIVER, C_UA);
+  char ua_frame[5];
+  buildControlFrame(ua_frame, RECEIVER, C_UA, NULL);
 
   printf("\nDEBUG: END LLOPENRECEIVER\n");
+}
+
+
+
+int readControlFrame(int sp_fd, char address_expected, char expected_control_field, ControlStruct *control_struct){
+	Control_State state = START;
+	char char_read;
+	while(state != STOP){
+		read(sp_fd,&char_read,1);
+		switch(state){
+			case START:{
+				if (char_read == FLAG){
+					state = FLAG_REC;
+				}
+				break;
+			}
+			case FLAG_REC:{
+				if (char_read == address_expected){
+					state = A_REC;
+				}else if (char_read != FLAG){
+					state = START;
+				}
+				break;
+			}
+			case A_REC:{
+				break;
+			}
+			case C_REC:{
+
+			}
+			case BCC_OK:{
+
+			}
+		}
+	}
+}
+
+int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size){
+	printf("\nDEBUG: START WRITEANDPROCESSREPLY\n");
+	unsigned int currentTries = 0;
+	while(currentTries++ < MAX_TRIES){
+		write(sp_fd,frame_to_write,frame_size);
+		if (processReply() == 0){
+			return 0;
+		}else
+	}
+	if (currentTries >= MAX_TRIES){
+		printf("\nMAX TRIES REACHED\n");
+		return -1;
+	}
+	printf("\nDEBUG: END WRITEANDPROCESSREPLY\n");
 }
