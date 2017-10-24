@@ -8,8 +8,7 @@ static long serial_number = 0;
 int main(int argc, char** argv) {
   ApplicationLayer app;
   initApp(&app, argc, argv);
-  //run(&app);
-  test(&app);
+  run(&app);
   return 0;
 }
 
@@ -20,7 +19,6 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
 
   app->bytes_per_data_packet = 1024;
   app->bytes_processed = 0;
-  app->bytes_processed_2 = 0;
   app->port = malloc(12);
   sprintf(app->port, "/dev/ttyS%s", argv[1]);
 
@@ -47,13 +45,6 @@ void printFileData(ApplicationLayer *app) {
   printf("\nFile data sent:\n");
   for(int i = 0; i < app->file_size; i++)
     printf("%d ", app->file_data[i]);
-  printf("\n");
-}
-
-void printFileData_2(ApplicationLayer *app) {
-  printf("\nFile data received:\n");
-  for(int i = 0; i < app->file_size; i++)
-    printf("%d ", app->file_data_2[i]);
   printf("\n");
 }
 
@@ -199,7 +190,7 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
     app->file_path[i] = frame->frame[i + 5 + l1];
 
   if(control == CONTROL_START)
-    app->file_data_2 = malloc(app->file_size);
+    app->file_data = malloc(app->file_size);
 
   //Debug
   printf("\nDisassembled control frame:\n");
@@ -221,7 +212,7 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   frame->data = malloc(data_size);
   for(int i = 0; i < data_size; i++){
     frame->data[i] = frame->frame[i + 4];
-    app->file_data_2[app->bytes_processed_2++] = frame->data[i];
+    app->file_data[app->bytes_processed++] = frame->data[i];
   }
 
   //Debug
@@ -240,23 +231,4 @@ void printUsage() {
   printf("    [file_path]: needed if the app works as a sender\n");
   printf("    [bytes_per_data_packet]: defaults to 1024\n");
   exit(1);
-}
-
-//Debug
-void test(ApplicationLayer *app) {
-  if(app->mode == SENDER) {
-    readFileData(app);
-    printFileData(app);
-    ControlFrame control_frame;
-    DataFrame	data_frame;
-    buildStartFrame(app, &control_frame);
-    disassembleControlFrame(app, &control_frame);
-    while (app->bytes_processed < app->file_size){
-      buildDataFrame(app, &data_frame);
-      disassembleDataFrame(app, &data_frame);
-    }
-    buildEndFrame(app, &control_frame);
-    disassembleControlFrame(app, &control_frame);
-    printFileData_2(app);
-  }
 }

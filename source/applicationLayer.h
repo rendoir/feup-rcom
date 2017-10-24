@@ -23,10 +23,8 @@ typedef struct {
   //File
   char* file_path;
   char* file_data;
-  char* file_data_2;
   long long file_size;
   long long bytes_processed;
-  long long bytes_processed_2;
 } ApplicationLayer;
 
 typedef struct {
@@ -61,8 +59,6 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
 
 //Utils
 void printUsage();
-void test(ApplicationLayer *app);
 void printFileData(ApplicationLayer *app);
-void printFileData_2(ApplicationLayer *app);
 
 #endif //APP_LAYER_H
