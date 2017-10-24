@@ -59,6 +59,8 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame);
 
 //Receiver
 int receive(ApplicationLayer *app);
+void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame);
+void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
 
 //Utils
 void printUsage();

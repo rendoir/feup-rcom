@@ -135,7 +135,7 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
   }
 
   //Debug
-  printf("\nControl frame:\n");
+  printf("\nBuilt control frame:\n");
   for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++)
 	  printf("%d ", frame->frame[i]);
   printf("\n");
@@ -165,7 +165,7 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 		frame->frame[i] = frame->data[i - 4];
 
 	//Debug
-	printf("\nData frame:\n");
+	printf("\nBuilt data frame:\n");
 	for (int i = 0; i < 4 + bytes_to_write; i++)
 		printf("%d ", frame->frame[i]);
 	printf("\n");
@@ -173,6 +173,54 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 
 //Receiver
 int receive(ApplicationLayer *app) {
-  //TODO
-	return 0;
+  ControlFrame control_frame;
+  DataFrame	data_frame;
+  disassembleControlFrame(app, &control_frame);
+  while (app->bytes_processed < app->file_size)
+    disassembleDataFrame(app, &data_frame);
+  disassembleControlFrame(app, &control_frame);
+  return 0;
+}
+
+void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
+  frame->control = frame->frame[0];
+  char t1 = frame->frame[1];
+  char l1 = frame->frame[2];
+  char* v1 = malloc(l1);
+  for(int i = 0; i < l1; i++)
+    v1[i] = frame->frame[i + 3];
+  app->file_size = atoll(v1);
+  char t2 = frame->frame[4 + l1];
+  char l2 = frame->frame[5 + l1];
+  app->file_path = malloc(l2);
+  for(int i = 0; i < l2; i++)
+    app->file_path[i] = frame->frame[i + 6 + l1];
+
+  //Debug
+  printf("\nDisassembled control frame:\n");
+  printf("%d %d %d ", frame->control, t1, l1);
+  for (int i = 0; i < l1; i++)
+  	printf("%d ", v1[i]);
+  printf("%d %d ", t2, l2);
+  for (int i = 0; i < l2; i++)
+  	printf("%d ", app->file_path[i]);
+  printf("\n");
+}
+
+void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
+  frame->control = frame->frame[0];
+  frame->serial = frame->frame[1];
+  frame->l2 = frame->frame[2];
+  frame->l1 = frame->frame[3];
+  frame->data_size = frame->l2 * 256 + frame->l1;
+  frame->data = malloc(frame->data_size);
+  for(int i = 0; i < frame->data_size; i++)
+    frame->data[i] = frame->frame[i + 4];
+
+  //Debug
+  printf("\nDisassembled data frame:\n");
+  printf("%d %d %d %d ", frame->control, frame->serial, frame->l2, frame->l1);
+  for (int i = 0; i < frame->data_size; i++)
+  	printf("%d ", frame->data[i]);
+  printf("\n");
 }
