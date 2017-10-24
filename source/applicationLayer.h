@@ -11,13 +11,14 @@
 #define TYPE_FILE_SIZE 0
 #define TYPE_FILE_NAME 1
 
-#define BYTES_PER_DATA_PACKET 8
 
 typedef struct {
   //Connection
   int sp_fd;           //Serial port file descriptor
   int mode;            //SENDER or RECEIVER
   char* port;          // /dev/ttySx
+
+  long long bytes_per_data_packet;
 
   //File
   char* file_path;

@@ -14,9 +14,10 @@ int main(int argc, char** argv) {
 
 //Common
 int initApp(ApplicationLayer *app, int argc, char** argv) {
-  if(argc < 3 || argc > 4)
+  if(argc < 3 || argc > 5)
     printUsage();
 
+  app->bytes_per_data_packet = 1024;
   app->bytes_processed = 0;
   app->port = malloc(12);
   sprintf(app->port, "/dev/ttyS%s", argv[1]);
@@ -28,11 +29,13 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
   else printUsage();
 
   if(app->mode == SENDER) {
-    if(argc == 4) {
+    if(argc >= 4) {
       app->file_path = malloc(128);
       strcpy(app->file_path, argv[3]);
     } else
       printUsage();
+    if(argc > 4)
+      app->bytes_per_data_packet = atoll(argv[4]);
   }
 
   return 0;
@@ -47,6 +50,7 @@ void printUsage() {
   printf("    port_number: the serial port number to use\n");
   printf("    mode: \"sender\" or \"receiver\"\n");
   printf("    [file_path]: needed if the app works as a sender\n");
+  printf("    [bytes_per_data_packet]: defaults to 1024\n");
   exit(1);
 }
 
@@ -132,7 +136,7 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
 
   //Debug
   printf("\nControl frame:\n");
-  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++) 
+  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++)
 	  printf("%d ", frame->frame[i]);
   printf("\n");
 
@@ -143,9 +147,9 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 	frame->serial = serial_number++ % 255;
 	long long bytes_left = app->file_size - app->bytes_processed;
 	long long bytes_to_write;
-	if (bytes_left < BYTES_PER_DATA_PACKET)
+	if (bytes_left < app->bytes_per_data_packet)
 		bytes_to_write = bytes_left;
-	else bytes_to_write = BYTES_PER_DATA_PACKET;
+	else bytes_to_write = app->bytes_per_data_packet;
 	frame->l2 = bytes_to_write / 256;
 	frame->l1 = bytes_to_write % 256;
 	frame->data = malloc(bytes_to_write);
@@ -169,6 +173,6 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 
 //Receiver
 int receive(ApplicationLayer *app) {
-//TODO
+  //TODO
 	return 0;
 }
