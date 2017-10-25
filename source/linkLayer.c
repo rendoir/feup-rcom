@@ -153,7 +153,7 @@ int llopenSender(int fileDescriptor){
   printf("\nDEBUG: START LLOPENSENDER\n");
   char set_frame[5];
   buildControlFrame(set_frame, TRANSMITTER, C_SET, NULL);
-
+  writeAndReadReply(fileDescriptor, set_frame, sizeof(set_frame), C_UA);
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
 }
@@ -162,16 +162,15 @@ int llopenReceiver(int fileDescriptor){
   printf("\nDEBUG: START LLOPENRECEIVER\n");
   char ua_frame[5];
   buildControlFrame(ua_frame, RECEIVER, C_UA, NULL);
-
+  readAndWriteReply(fileDescriptor, ua_frame, sizeof(ua_frame), C_SET);
   printf("\nDEBUG: END LLOPENRECEIVER\n");
 }
-
 
 
 int readControlFrame(int sp_fd, char address_expected, char expected_control_field, ControlStruct *control_struct){
 	State state = START;
 	char char_read;
-	while(state != STOP){
+	while(state != STOP && !flag){
 		read(sp_fd,&char_read,1);
 		switch(state){
 			case START:{
@@ -224,7 +223,12 @@ int readControlFrame(int sp_fd, char address_expected, char expected_control_fie
 			}
 		}
 	}
-	return 0;
+  if(state == STOP){
+    return 0;
+  }
+  else{
+    return -2;
+  }
 }
 
 int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct){
@@ -234,7 +238,7 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 	unsigned long frame_allocated_space = 7;
 	unsigned long frame_size = 0;
 	char *frame_received = malloc(frame_allocated_space);
-	while(num_flags_received < 2){
+	while(num_flags_received < 2 && !flag){
 		read(sp_fd,&read_char,1);
 		if (read_char == FLAG){
 			num_flags_received++;
@@ -285,18 +289,46 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 	}
 }
 
-int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size){
+int flag = 0;
+unsigned int currentTries = 0;
+int alarmHandler(){
+  printf("Alarm #%d\n", alarm_tries);
+  flag = 1;
+  currentTries++;
+}
+
+int processReply(int sp_fd, char address_expected, char expected_control_field){
+  alarm(3);
+  ControlStruct control_struct = malloc(sizeof(ControlStruct));
+  return readControlFrame(sp_fd, address_expected, expected_control_field, control_struct));
+}
+
+int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field){
 	printf("\nDEBUG: START WRITEANDPROCESSREPLY\n");
-	unsigned int currentTries = 0;
+
 	while(currentTries++ < MAX_TRIES){
 		write(sp_fd,frame_to_write,frame_size);
-		if (processReply() == 0){
+		if (processReply(sp_fd, getAddress(), expected_control_field) == 0){
 			return 0;
-		}else
 	}
 	if (currentTries >= MAX_TRIES){
 		printf("\nMAX TRIES REACHED\n");
 		return -1;
 	}
 	printf("\nDEBUG: END WRITEANDPROCESSREPLY\n");
+}
+
+int readAndWriteReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field){
+	printf("\nDEBUG: START READANDPROCESSREPLY\n");
+
+	while(currentTries++ < MAX_TRIES){
+		if (processReply(sp_fd, getAddress(), expected_control_field) == 0){
+  		write(sp_fd,frame_to_write,frame_size);
+			return 0;
+	}
+	if (currentTries >= MAX_TRIES){
+		printf("\nMAX TRIES REACHED\n");
+		return -1;
+	}
+	printf("\nDEBUG: END READANDPROCESSREPLY\n");
 }
