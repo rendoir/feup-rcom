@@ -8,31 +8,41 @@
 
 #define MAX_SIZE 1024
 
-typedef struct {
-    char port[20];
-    int baudRate;
-    unsigned int sequenceNumber;
-    unsigned int timeout;
-    unsigned int numTransmissions;
-    char frame[MAX_SIZE];
+typedef struct
+{
+	char port[20];
+	int baudRate;
+	unsigned int sequenceNumber;
+	unsigned int timeout;
+	unsigned int numTransmissions;
+	char frame[MAX_SIZE];
 } LinkLayer;
 
-typedef struct {
+typedef struct
+{
 	char address_field;
 	char control_field;
 	char bcc1;
-	char* data;
-	unsigned long allocated_space;
+	char *data;
+	unsigned long data_allocated_space;
 	char bcc2;
 } DataStruct;
 
-typedef struct {
+typedef struct
+{
 	char address_field;
 	char control_field;
 	char bcc1;
 } ControlStruct;
 
-typedef enum {START,FLAG_REC,A_REC,C_REC,BCC1_OK,READ_DATA,STOP} State;
+typedef enum {
+	START,
+	FLAG_REC,
+	A_REC,
+	C_REC,
+	BCC1_OK,
+	STOP
+} State;
 
 /**
 * Alarm Handler
@@ -132,6 +142,7 @@ int readControlFrame(int sp_fd, char expected_address, char expected_control_fie
 /*
 * State machine that analysis data frames received.
 * data_struct is filled with the frame read only if no errors detected and not duplicated.
+* does not return if error in bcc1, address or control fields.
 * Returns: 0 if no errors detected or if errors detected but duplicated -> should trigger a RR.
 * -1 if error in bcc2 or incorrect size-> should trigger a REJ.
 */
@@ -144,8 +155,6 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 * If num_tries >= MAX_TRIES -> return -1;
 * If reply = C_REJ -> return -2 (should be called again).
 */
-int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size);
-
-
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size);
 
 #endif // LINK_LAYER_H
