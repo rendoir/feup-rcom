@@ -44,7 +44,7 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
-  if (sequence_number == NULL)
+  if (sequence_number == -1)
   {
     frame[2] = control_field;
   }
@@ -56,7 +56,7 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
   frame[4] = FLAG;
 }
 
-void buildDataFrame(char **frame, char *data, int data_size, int *frame_size, long sequence_number)
+void buildDataFrame(char **frame, char *data, int data_size, unsigned long *frame_size, long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   *frame_size = data_size + 6;
@@ -82,7 +82,7 @@ void buildDataFrame(char **frame, char *data, int data_size, int *frame_size, lo
   printf("\nDEBUG: END BUILDDATAFRAME\n");
 }
 
-void byteStuffing(char **frame, int *frame_size)
+void byteStuffing(char **frame, unsigned long *frame_size)
 {
   printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
@@ -96,7 +96,9 @@ void byteStuffing(char **frame, int *frame_size)
       if (allocated_space <= *frame_size)
       {
         allocated_space = 2 * allocated_space;
-        realloc(*frame, allocated_space * sizeof(char));
+        if (realloc(*frame, allocated_space * sizeof(char)) == NULL){
+          perror("Error realloc memory for byte stuffing");
+        }
       }
       insertValueAt(ESCAPE, *frame, i, frame_size);
       i++;
@@ -105,7 +107,7 @@ void byteStuffing(char **frame, int *frame_size)
   printf("\nDEBUG: END BYTESTUFFING\n");
 }
 
-void byteUnstuffing(char **frame, int *frame_size)
+void byteUnstuffing(char **frame, unsigned long *frame_size)
 {
   printf("\nDEBUG: START BYTEUNSTUFFING\n");
   int i;
@@ -122,7 +124,9 @@ void byteUnstuffing(char **frame, int *frame_size)
     }
   }
   // Realloc to free unused memory
-  realloc(*frame, *frame_size * sizeof(char));
+  if (realloc(*frame, *frame_size * sizeof(char)) == NULL){
+    perror("Error reallocating memory for byte unstuffing");
+  }
   printf("\nDEBUG: END BYTEUNSTUFFING\n");
 }
 
@@ -146,9 +150,9 @@ int llopen(char *port, int caller)
   }
 
   int returnValue;
-  if (caller == TRANSMITTER)
+  if (caller == SENDER)
   {
-    returnValue = llopenTransmitter(fileDescriptor);
+    returnValue = llopenSender(fileDescriptor);
   }
   else if (caller == RECEIVER)
   {
@@ -163,7 +167,7 @@ int llopenSender(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENSENDER\n");
   char set_frame[5];
-  buildControlFrame(set_frame, TRANSMITTER, C_SET, NULL);
+  buildControlFrame(set_frame, SENDER, C_SET, -1);
 
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
@@ -173,7 +177,7 @@ int llopenReceiver(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENRECEIVER\n");
   char ua_frame[5];
-  buildControlFrame(ua_frame, RECEIVER, C_UA, NULL);
+  buildControlFrame(ua_frame, RECEIVER, C_UA, -1);
 
   printf("\nDEBUG: END LLOPENRECEIVER\n");
 }
@@ -227,9 +231,9 @@ int readControlFrame(int sp_fd, char address_expected, char expected_control_fie
     }
     case C_REC:
     {
-      if (char_read == control_struct->address_field ^ control_struct->control_field)
+      if (char_read == (control_struct->address_field ^ control_struct->control_field))
       {
-        state = BCC_OK;
+        state = BCC1_OK;
       }
       else if (char_read != FLAG)
       {
@@ -291,14 +295,13 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
   }
   if (frame_size < DATA_FRAME_MIN_SIZE)
   {
-    perror("Data frame size should not be smaller than %d", DATA_FRAME_MIN_SIZE);
+    printf("Data frame size should not be smaller than %d bytes", DATA_FRAME_MIN_SIZE);
     return -1;
   }
 
   byteUnstuffing(&frame_received, &frame_size);
   data_struct->data_allocated_space = 1;
   data_struct->data = malloc(data_struct->data_allocated_space);
-  unsigned long data_index = 1;
   unsigned long frame_index = 0;
   while (state != STOP)
   {
@@ -371,13 +374,18 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
     {
       if (currentByte != FLAG)
       {
-        STATE = STOP;
+        state = STOP;
       }
       else
       {
-        STATE = FLAG_REC;
+        state = FLAG_REC;
       }
       break;
+    }
+    default:
+    {
+      printf("Reached unexpected state\n");
+      return -1;
     }
     }
   }
@@ -442,7 +450,6 @@ int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size)
     {
       return 0;
     }
-    else
   }
   if (currentTries >= MAX_TRIES)
   {

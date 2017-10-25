@@ -1,6 +1,6 @@
 #include "utils.h"
 
-void insertValueAt(char value, char *array, int index, int *array_size)
+void insertValueAt(char value, char *array, int index, unsigned long *array_size)
 {
   int i;
   for (i = (*array_size) - 1; i > index; i--)
@@ -11,7 +11,7 @@ void insertValueAt(char value, char *array, int index, int *array_size)
   (*array_size)++;
 }
 
-void removeValueAt(char *array, int index, int *array_size)
+void removeValueAt(char *array, int index, unsigned long *array_size)
 {
   int i;
   for (i = index; i < (*array_size) - 1; i++)

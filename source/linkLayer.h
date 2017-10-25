@@ -5,6 +5,7 @@
 #include <string.h> //used for memcpy
 #include "serialPort.h"
 #include "macros.h"
+#include "utils.h"
 
 #define MAX_SIZE 1024
 
@@ -53,6 +54,7 @@ void alarm_handler();
 * Builds a control packet and returns it on the frame parameter.
 * Frame memory should be allocated previously.
 * Caller is usued to select the address value.
+* If control field = SET | DISC | UA -> sequence_number should be -1;
 */
 void buildControlFrame(char *frame, int caller, char control_field, long sequence_number);
 
@@ -62,19 +64,19 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 * Invokes byte stuffing.
 * frame_size is updated with the new size of the created frame;
 */
-void buildDataFrame(char **frame, char *data, int data_size, int *frame_size, long sequence_number);
+void buildDataFrame(char **frame, char *data, int data_size, unsigned long *frame_size, long sequence_number);
 
 /**
 * Does byte stuffing on frame.
 * frame_size is updated as reallocs are made.
 */
-void byteStuffing(char **frame, int *frame_size);
+void byteStuffing(char **frame, unsigned long *frame_size);
 
 /**
 * Does byte unstuffing on frame.
 * frame_size is updates as reallocs are made.
 */
-void byteUnstuffing(char **frame, int *frame_size);
+void byteUnstuffing(char **frame, unsigned long *frame_size);
 
 /**
  * Returns the Address that should be used on a control frame.
