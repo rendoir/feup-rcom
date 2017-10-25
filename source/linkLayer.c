@@ -96,7 +96,8 @@ void byteStuffing(char **frame, unsigned long *frame_size)
       if (allocated_space <= *frame_size)
       {
         allocated_space = 2 * allocated_space;
-        if (realloc(*frame, allocated_space * sizeof(char)) == NULL){
+        if (realloc(*frame, allocated_space * sizeof(char)) == NULL)
+        {
           perror("Error realloc memory for byte stuffing");
         }
       }
@@ -124,7 +125,8 @@ void byteUnstuffing(char **frame, unsigned long *frame_size)
     }
   }
   // Realloc to free unused memory
-  if (realloc(*frame, *frame_size * sizeof(char)) == NULL){
+  if (realloc(*frame, *frame_size * sizeof(char)) == NULL)
+  {
     perror("Error reallocating memory for byte unstuffing");
   }
   printf("\nDEBUG: END BYTEUNSTUFFING\n");
@@ -182,18 +184,62 @@ int llopenReceiver(int fileDescriptor)
   printf("\nDEBUG: END LLOPENRECEIVER\n");
 }
 
-int readControlFrame(int sp_fd, char address_expected, char expected_control_field, ControlStruct *control_struct)
+int readFromFileToArray(int sp_fd, char **frame_received, int min_size)
+{
+  int num_flags_received = 0;
+  int frame_size = 0;
+  int frame_allocated_space = min_size;
+  (*frame_received) = malloc(frame_allocated_space * sizeof(char));
+  char read_char;
+  while (num_flags_received < 2)
+  {
+    read(sp_fd, &read_char, 1);
+    if (read_char == FLAG)
+    {
+      num_flags_received++;
+    }
+    if (frame_size >= frame_allocated_space)
+    {
+      frame_allocated_space = frame_allocated_space * 2;
+      if (realloc((*frame_received), frame_allocated_space) == NULL)
+      {
+        perror("Error realloc memory for read data frame");
+      }
+    }
+    (*frame_received)[frame_size++] = read_char;
+  }
+  if (frame_size < min_size)
+  {
+    printf("Frame size should not be smaller than %d bytes", DATA_FRAME_MIN_SIZE);
+    return -1;
+  }
+  return 0;
+}
+
+int readControlFrame(int sp_fd, char expected_address_field, char expected_control_field, ControlStruct *control_struct)
+{
+  char *control_frame = NULL;
+  readFromFileToArray(sp_fd, &control_frame, 5);
+  stateMachine(control_frame, expected_address_field, expected_control_field, 0);
+  control_struct->address_field = control_frame[1]; // or expected_address_field
+  control_struct->control_field = control_frame[2]; // or expected_control_field
+  control_struct->bcc1 = control_frame[3];
+}
+
+void stateMachine(char *frame_received, char expected_address_field, char expected_control_field, int isData)
 {
   State state = START;
-  char char_read;
+  unsigned long frame_index = 0;
+  char received_address;
+  char received_control;
   while (state != STOP)
   {
-    read(sp_fd, &char_read, 1);
+    char currentByte = frame_received[frame_index++];
     switch (state)
     {
     case START:
     {
-      if (char_read == FLAG)
+      if (currentByte == FLAG)
       {
         state = FLAG_REC;
       }
@@ -201,12 +247,12 @@ int readControlFrame(int sp_fd, char address_expected, char expected_control_fie
     }
     case FLAG_REC:
     {
-      if (char_read == address_expected)
+      if (currentByte == expected_address_field)
       {
         state = A_REC;
-        control_struct->address_field = char_read;
+        received_address = currentByte;
       }
-      else if (char_read != FLAG)
+      else if (currentByte != FLAG)
       {
         state = START;
       }
@@ -214,60 +260,79 @@ int readControlFrame(int sp_fd, char address_expected, char expected_control_fie
     }
     case A_REC:
     {
-      if (char_read == expected_control_field || char_read == C_REJ)
+      if (currentByte == expected_control_field)
       {
-        state = A_REC;
-        control_struct->control_field = char_read;
+        received_control = currentByte;
+        state = C_REC;
       }
-      else if (char_read != FLAG)
+      else if (currentByte == (expected_control_field ^ 0x40))
       {
-        state = START;
+        isDuplicated = 1;
+        state = C_REC;
+      }
+      else if (currentByte == FLAG)
+      {
+        state = FLAG_REC;
       }
       else
       {
-        state = FLAG_REC;
+        state = START;
       }
       break;
     }
     case C_REC:
     {
-      if (char_read == (control_struct->address_field ^ control_struct->control_field))
+      if (currentByte == (received_address ^ received_control))
       {
+        // If Bcc is correct
         state = BCC1_OK;
       }
-      else if (char_read != FLAG)
+      else if (currentByte == FLAG)
       {
-        state = START;
+        state = FLAG_REC;
       }
       else
       {
-        state = FLAG_REC;
+        state = START;
       }
       break;
     }
     case BCC1_OK:
     {
-      if (char_read == FLAG)
+      if (isData)
       {
-        state = STOP;
+        if (currentByte != FLAG)
+        {
+          state = STOP;
+        }
+        else
+        {
+          state = FLAG_REC;
+        }
       }
       else
       {
-        state = START;
+        if (currentByte == FLAG)
+        {
+          state = STOP;
+        }
+        else
+        {
+          state = START;
+        }
       }
       break;
     }
     default:
     {
-      printf("Reached unexpected state\n");
-      return -1;
+      printf("State Machine Reached unexpected state\n");
+      return;
     }
     }
   }
-  return 0;
 }
 
-int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct)
+int readDataFrame(int sp_fd, char expected_address, char expected_control_field, DataStruct *data_struct)
 {
   State state = START;
   char read_char;
@@ -318,7 +383,7 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
     }
     case FLAG_REC:
     {
-      if (currentByte == address_expected)
+      if (currentByte == expected_address)
       {
         state = A_REC;
         data_struct->address_field = currentByte;
