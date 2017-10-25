@@ -5,34 +5,45 @@
 #include <string.h> //used for memcpy
 #include "serialPort.h"
 #include "macros.h"
+#include "utils.h"
 
 #define MAX_SIZE 1024
 
-typedef struct {
-    char port[20];
-    int baudRate;
-    unsigned int sequenceNumber;
-    unsigned int timeout;
-    unsigned int numTransmissions;
-    char frame[MAX_SIZE];
+typedef struct
+{
+	char port[20];
+	int baudRate;
+	unsigned int sequenceNumber;
+	unsigned int timeout;
+	unsigned int numTransmissions;
+	char frame[MAX_SIZE];
 } LinkLayer;
 
-typedef struct {
+typedef struct
+{
 	char address_field;
 	char control_field;
 	char bcc1;
-	char* data;
-	unsigned long allocated_space;
+	char *data;
+	unsigned long data_allocated_space;
 	char bcc2;
 } DataStruct;
 
-typedef struct {
+typedef struct
+{
 	char address_field;
 	char control_field;
 	char bcc1;
 } ControlStruct;
 
-typedef enum {START,FLAG_REC,A_REC,C_REC,BCC1_OK,READ_DATA,STOP} State;
+typedef enum {
+	START,
+	FLAG_REC,
+	A_REC,
+	C_REC,
+	BCC1_OK,
+	STOP
+} State;
 
 /**
 * Alarm Handler
@@ -43,6 +54,7 @@ void alarm_handler();
 * Builds a control packet and returns it on the frame parameter.
 * Frame memory should be allocated previously.
 * Caller is usued to select the address value.
+* If control field = SET | DISC | UA -> sequence_number should be -1;
 */
 void buildControlFrame(char *frame, int caller, char control_field, long sequence_number);
 
@@ -52,19 +64,19 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 * Invokes byte stuffing.
 * frame_size is updated with the new size of the created frame;
 */
-void buildDataFrame(char **frame, char *data, int data_size, int *frame_size, long sequence_number);
+void buildDataFrame(char **frame, char *data, int data_size, unsigned long *frame_size, long sequence_number);
 
 /**
 * Does byte stuffing on frame.
 * frame_size is updated as reallocs are made.
 */
-void byteStuffing(char **frame, int *frame_size);
+void byteStuffing(char **frame, unsigned long *frame_size);
 
 /**
 * Does byte unstuffing on frame.
 * frame_size is updates as reallocs are made.
 */
-void byteUnstuffing(char **frame, int *frame_size);
+void byteUnstuffing(char **frame, unsigned long *frame_size);
 
 /**
  * Returns the Address that should be used on a control frame.
@@ -132,6 +144,7 @@ int readControlFrame(int sp_fd, char expected_address, char expected_control_fie
 /*
 * State machine that analysis data frames received.
 * data_struct is filled with the frame read only if no errors detected and not duplicated.
+* does not return if error in bcc1, address or control fields.
 * Returns: 0 if no errors detected or if errors detected but duplicated -> should trigger a RR.
 * -1 if error in bcc2 or incorrect size-> should trigger a REJ.
 */
@@ -144,8 +157,6 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 * If num_tries >= MAX_TRIES -> return -1;
 * If reply = C_REJ -> return -2 (should be called again).
 */
-int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size);
-
-
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size);
 
 #endif // LINK_LAYER_H
