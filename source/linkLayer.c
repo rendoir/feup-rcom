@@ -27,7 +27,7 @@ unsigned char getAddress(int caller, char control_field)
   }
 }
 
-unsigned char getBCC(char *data, int data_size)
+unsigned char getBCC(unsigned char *data, int data_size)
 {
   unsigned char bcc = 0;
   int i;
@@ -212,8 +212,9 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
 int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
   State state = START;
-  unsigned long frame_index = 0;
-  char read_char;
+  unsigned char read_char;
+  unsigned char received_address;
+  unsigned char received_control;
   int isDuplicated = 0;
   int isReject = 0;
   while (state != STOP)
@@ -345,10 +346,10 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   readFromFileToArray(sp_fd, &data_bcc2, data_bcc2_size);
   byteUnstuffing(&data_bcc2, data_bcc2_size);
   (*data_size) = *data_bcc2_size;
-  char received_bcc2 = data_bcc2[data_bcc2_size - 1];
+  unsigned char received_bcc2 = data_bcc2[(*data_bcc2_size) - 1];
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
-  char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
+  unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
   if (calculated_bcc2 == received_bcc2)
   {
     return 0;
@@ -371,8 +372,9 @@ int alarmHandler()
 int processReply(int sp_fd, char address_expected, char expected_control_field)
 {
   alarm(3);
-  ControlStruct control_struct;
-  return readControlFrame(sp_fd, address_expected, expected_control_field, &control_struct);
+  // ControlStruct control_struct;
+  // return readControlFrame(sp_fd, address_expected, expected_control_field, &control_struct);
+  return 0;
 }
 
 int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field)

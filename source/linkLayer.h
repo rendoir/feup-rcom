@@ -130,7 +130,7 @@ int llcloseReceiver(int sp_fd);
 * Returns: 0 if no errors detected or if errors detected in bcc2 but duplicated -> should trigger a RR.
 * -1 if error in bcc2 -> should trigger a REJ.
 */
-int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct);
+int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size);
 
 /*
 * State machine that checks frame headers.
