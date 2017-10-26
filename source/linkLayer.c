@@ -87,7 +87,7 @@ void byteStuffing(char **frame, unsigned long *frame_size)
   printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
   int allocated_space = *frame_size;
-  for (i = 1; i < *frame_size - 1; i++)
+  for (i = 4; i < *frame_size - 1; i++)
   {
     char currentByte = (*frame)[i];
     if (currentByte == FLAG || currentByte == ESCAPE)
