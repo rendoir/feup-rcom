@@ -2,7 +2,7 @@
 
 struct sigaction oldAction;
 
-int setNewAlarmHandler(void (*signal_handler)(int)){
+int setNewAlarmHandler(void (*signal_hanlder)(int)){
 	struct sigaction action;
 	action.sa_handler = *signal_handler;
 	sigemptyset(&action.sa_mask);
