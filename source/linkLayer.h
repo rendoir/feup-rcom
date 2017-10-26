@@ -59,7 +59,7 @@ void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, u
 * Does byte stuffing on frame.
 * frame_size is updated as reallocs are made.
 */
-void byteStuffing(char **frame, unsigned long *frame_size);
+void byteStuffing(unsigned char **frame, unsigned long *frame_size);
 
 /**
 * Does byte unstuffing on frame.

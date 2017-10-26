@@ -73,13 +73,13 @@ void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, u
   unsigned long i = 0;
   for (i = 0; i < *frame_size; i++)
   {
-    printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
+    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, *frame[i]);
   }
 
   byteStuffing(frame, frame_size);
   for (i = 0; i < *frame_size; i++)
   {
-    printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
+    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, *frame[i]);
   }
   printf("\nDEBUG: END BUILDDATAFRAME\n");
 }
@@ -164,7 +164,7 @@ int llopen(char *port, int caller)
 int llopenSender(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENSENDER\n");
-  char set_frame[5];
+  unsigned char set_frame[5];
   buildControlFrame(set_frame, SENDER, C_SET, -1);
   writeAndReadReply(fileDescriptor, set_frame, sizeof(set_frame), C_UA);
 
@@ -175,7 +175,7 @@ int llopenSender(int fileDescriptor)
 int llopenReceiver(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENRECEIVER\n");
-  char ua_frame[5];
+  unsigned char ua_frame[5];
 
   buildControlFrame(ua_frame, RECEIVER, C_UA, -1);
   writeAndReadReply(fileDescriptor, ua_frame, sizeof(ua_frame), C_SET);
