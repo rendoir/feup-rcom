@@ -1,3 +1,6 @@
+#ifndef ALARM_H
+#define ALARM_H
+
 #include <unistd.h>
 #include <signal.h>
 #include <stdio.h>
@@ -14,3 +17,5 @@
 int setNewAlarmHandler(void (*signal_hanlder)(int));
 
 int resetAlarmHandler();
+
+#endif

@@ -150,6 +150,10 @@ int readControlFrame(int sp_fd, char expected_address, char expected_control_fie
 */
 int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct);
 
+int alarmHandler();
+
+int processReply(int sp_fd, char address_expected, char expected_control_field);
+
 /**
 * Writes frame_to_write to sp_fd.
 * Waits for reply and processes it.
@@ -157,6 +161,8 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 * If num_tries >= MAX_TRIES -> return -1;
 * If reply = C_REJ -> return -2 (should be called again).
 */
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size);
+int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field);
+
+int readAndWriteReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field);
 
 #endif // LINK_LAYER_H

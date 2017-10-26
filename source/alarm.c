@@ -8,7 +8,7 @@ int setNewAlarmHandler(void (*signal_hanlder)(int)){
 	sigemptyset(&action.sa_mask);
 	action.sa_flags = 0;
 
-	if (sigaction(SIGALARM,&action, &oldAction) < 0)
+	if (sigaction(SIGALRM,&action, &oldAction) < 0)
 	{
 		fprintf(stderr,"Unable to install SIGALARM handler\n");
 		return -1;

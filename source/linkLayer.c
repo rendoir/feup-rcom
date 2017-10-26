@@ -1,13 +1,11 @@
 #include "linkLayer.h"
 
-int main()
-{
-  return 0;
-}
-
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
 static char last_frame_accepted = 1;
+
+int flag = 0;
+unsigned int currentTries = 0;
 
 unsigned char getAddress(int caller, char control_field)
 {
@@ -180,8 +178,10 @@ int llopenReceiver(int fileDescriptor)
   char ua_frame[5];
 
   buildControlFrame(ua_frame, RECEIVER, C_UA, -1);
-  writeAndReadReply(fileDescriptor, ua_frame, sizeof(set_frame), C_SET);
+  writeAndReadReply(fileDescriptor, ua_frame, sizeof(ua_frame), C_SET);
+
   printf("\nDEBUG: END LLOPENRECEIVER\n");
+  return 0;
 }
 
 int readControlFrame(int sp_fd, char address_expected, char expected_control_field, ControlStruct *control_struct)
@@ -445,18 +445,17 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
   }
 }
 
-int flag = 0;
-unsigned int currentTries = 0;
 int alarmHandler(){
-  printf("Alarm #%d\n", alarm_tries);
+  printf("Alarm #%d\n", currentTries);
   flag = 1;
   currentTries++;
+  return 0;
 }
 
 int processReply(int sp_fd, char address_expected, char expected_control_field){
   alarm(3);
-  ControlStruct control_struct = malloc(sizeof(ControlStruct));
-  return readControlFrame(sp_fd, address_expected, expected_control_field, control_struct));
+  ControlStruct control_struct;
+  return readControlFrame(sp_fd, address_expected, expected_control_field, &control_struct);
 }
 
 int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field){
@@ -464,27 +463,31 @@ int writeAndReadReply(int sp_fd, char* frame_to_write, int frame_size, char expe
 
 	while(currentTries++ < MAX_TRIES){
 		write(sp_fd,frame_to_write,frame_size);
-		if (processReply(sp_fd, getAddress(), expected_control_field) == 0){
+		if (processReply(sp_fd, getAddress(,expected_control_field), expected_control_field) == 0){
 			return 0;
-	}
+	   }
+   }
 	if (currentTries >= MAX_TRIES){
 		printf("\nMAX TRIES REACHED\n");
-		return -1;
+    return -1;
 	}
 	printf("\nDEBUG: END WRITEANDPROCESSREPLY\n");
+  return 0;
 }
 
 int readAndWriteReply(int sp_fd, char* frame_to_write, int frame_size, char expected_control_field){
 	printf("\nDEBUG: START READANDPROCESSREPLY\n");
 
 	while(currentTries++ < MAX_TRIES){
-		if (processReply(sp_fd, getAddress(), expected_control_field) == 0){
+		if (processReply(sp_fd, getAddress(, expected_control_field), expected_control_field) == 0){
   		write(sp_fd,frame_to_write,frame_size);
 			return 0;
-	}
+	   }
+   }
 	if (currentTries >= MAX_TRIES){
 		printf("\nMAX TRIES REACHED\n");
-		return -1;
+    return -1;
 	}
 	printf("\nDEBUG: END READANDPROCESSREPLY\n");
+  return 0;
 }
