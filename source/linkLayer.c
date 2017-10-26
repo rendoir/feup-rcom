@@ -9,18 +9,13 @@ unsigned int currentTries = 0;
 
 unsigned char getAddress(int caller, char control_field)
 {
-  if (control_field == C_SET || control_field == C_DISC)
-  {
-    if (caller == SENDER)
-    {
+  if (control_field == C_SET || control_field == C_DISC) {
+    if (caller == SENDER) {
       return A_SENDER_COMMAND;
     }
     return A_RECEIVER_COMMAND;
-  }
-  else
-  {
-    if (caller == RECEIVER)
-    {
+  } else {
+    if (caller == RECEIVER) {
       return A_RECEIVER_COMMAND;
     }
     return A_SENDER_COMMAND;
@@ -32,9 +27,8 @@ unsigned char getBCC(char *data, int data_size)
   unsigned char bcc = 0;
   int i;
   for (i = 0; i < data_size; i++)
-  {
     bcc = bcc ^ data[i];
-  }
+
   return bcc;
 }
 
@@ -42,14 +36,13 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
-  if (sequence_number == -1)
-  {
+
+  if (sequence_number == -1) {
     frame[2] = control_field;
-  }
-  else
-  {
+  } else {
     frame[2] = ((sequence_number % 2) << 7) + control_field;
   }
+
   frame[3] = frame[1] ^ frame[2];
   frame[4] = FLAG;
 }
@@ -72,6 +65,7 @@ void buildDataFrame(char **frame, char *data, int data_size, unsigned long *fram
   {
     printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
   }
+  
   byteStuffing(frame, frame_size);
   for (i = 0; i < *frame_size; i++)
   {
