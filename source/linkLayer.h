@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h> //used for memcpy
 #include "serialPort.h"
+#include "alarm.h"
 #include "macros.h"
 #include "utils.h"
 
@@ -23,7 +24,7 @@ typedef struct
 {
 	char address_field;
 	char control_field;
-} Frame_Header;
+} Frame_Header;	
 
 typedef enum {
 	START,
@@ -34,10 +35,17 @@ typedef enum {
 	STOP
 } State;
 
+typedef enum {
+	OK,
+	DUPLICATED,
+	REJECTED,
+	ERROR
+} Reply_Status;
+
 /**
 * Alarm Handler
 */
-int alarm_handler();
+int alarm_handler(int);
 
 /**
 * Builds a control packet and returns it on the frame parameter.
@@ -45,15 +53,14 @@ int alarm_handler();
 * Caller is usued to select the address value.
 * If control field = SET | DISC | UA -> sequence_number should be -1;
 */
-void buildControlFrame(unsigned char *frame, int caller, unsigned char control_field, long sequence_number);
-
+void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, long sequence_number);
 /**
 * Creates an Information Frame.
 * It allocates space for the frame.
 * Invokes byte stuffing.
 * frame_size is updated with the new size of the created frame;
 */
-void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number);
+void buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number);
 
 /**
 * Does byte stuffing on frame.
@@ -139,19 +146,6 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
 * Returns 2 if it is a C_REJ frame not duplicated.
 * If errors detected, it will not return;
 */
-int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData);
-
-int processReply(int sp_fd, char address_expected, char expected_control_field);
-
-/**
-* Writes frame_to_write to sp_fd.
-* Waits for reply and processes it.
-* If reply control_field = C_RR | C_UA | C_DISC -> Ok, return 0;
-* If num_tries >= MAX_TRIES -> return -1;
-* If reply = C_REJ -> return -2 (should be called again).
-*/
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field);
-
-int readAndWriteReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field);
+Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData);
 
 #endif // LINK_LAYER_H

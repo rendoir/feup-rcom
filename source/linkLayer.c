@@ -1,13 +1,13 @@
 #include "linkLayer.h"
 
+
+int flag = 0;
+
 /* Uncomment to use them
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
 static char last_frame_accepted = 1;
 */
-
-int flag = 0;
-unsigned int currentTries = 0;
 
 unsigned char getAddress(int caller, unsigned char control_field)
 {
@@ -39,7 +39,7 @@ unsigned char getBCC(unsigned char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrame(unsigned char *frame, int caller, unsigned char control_field, long sequence_number)
+void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, long sequence_number)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
@@ -57,7 +57,7 @@ void buildControlFrame(unsigned char *frame, int caller, unsigned char control_f
   frame[4] = FLAG;
 }
 
-void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number)
+void buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   *frame_size = data_size + 6;
@@ -165,8 +165,7 @@ int llopenSender(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENSENDER\n");
   unsigned char set_frame[5];
-  buildControlFrame(set_frame, SENDER, C_SET, -1);
-  writeAndReadReply(fileDescriptor, set_frame, sizeof(set_frame), C_UA);
+  buildControlFrameLINK(set_frame, SENDER, C_SET, -1);
 
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
@@ -177,8 +176,7 @@ int llopenReceiver(int fileDescriptor)
   printf("\nDEBUG: START LLOPENRECEIVER\n");
   unsigned char ua_frame[5];
 
-  buildControlFrame(ua_frame, RECEIVER, C_UA, -1);
-  writeAndReadReply(fileDescriptor, ua_frame, sizeof(ua_frame), C_SET);
+  buildControlFrameLINK(ua_frame, RECEIVER, C_UA, -1);
 
   printf("\nDEBUG: END LLOPENRECEIVER\n");
   return 0;
@@ -211,7 +209,7 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
   return 0;
 }
 
-int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
+Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
   State state = START;
   unsigned char read_char;
@@ -219,10 +217,11 @@ int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
   unsigned char received_control;
   int isDuplicated = 0;
   int isReject = 0;
-  while (state != STOP)
+  while (state != STOP && !flag)
   {
     if (state == BCC1_OK && isData)
     {
+      state = STOP;
       break;
     }
     char currentByte = read(sp_fd, &read_char, 1);
@@ -318,26 +317,29 @@ int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
     default:
     {
       printf("State Machine Reached unexpected state\n");
-      return -1;
+      return ERROR;
     }
     }
   }
   if (isDuplicated)
   {
-    return 1;
+    return DUPLICATED;
   }
   if (isReject)
   {
-    return 2;
+    return REJECTED;
   }
-  return 0;
+  if(state != STOP){
+    return ERROR;
+  }
+  return OK;
 }
 
 int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
 {
   int returnValue = readFrameHeader(sp_fd, frame_header, 1);
   unsigned char *data_bcc2;
-  unsigned long *data_bcc2_size;
+  unsigned long *data_bcc2_size = NULL;
   if (returnValue == 1)
   {
     // If no errors detected or it is duplicated
@@ -363,33 +365,36 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   }
 }
 
-int alarmHandler()
+
+
+int alarmHandler(int time)
 {
-  printf("Alarm #%d\n", currentTries);
+  printf("Alarm Interrupt\n");
   flag = 1;
-  currentTries++;
   return 0;
 }
 
-int processReply(int sp_fd, char address_expected, char expected_control_field)
-{
-  alarm(3);
-  // ControlStruct control_struct;
-  // return readControlFrame(sp_fd, address_expected, expected_control_field, &control_struct);
-  return 0;
-}
-
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field)
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field, int caller)
 {
   printf("\nDEBUG: START WRITEANDPROCESSREPLY\n");
 
+  Frame_Header frame_header_expected;
+  frame_header_expected.address_field = getAddress(caller, expected_control_field);
+  frame_header_expected.control_field = expected_control_field;
+
+  flag = 0;
+  unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
   {
     write(sp_fd, frame_to_write, frame_size);
-    if (processReply(sp_fd, getAddress(/*I dont know what put here*/, expected_control_field), expected_control_field) == 0)
+    alarm(3);
+    Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
+    if(return_value != REJECTED && return_value != ERROR)
     {
-      return 0;
+      currentTries = MAX_TRIES;
+      alarm(0);
     }
+    printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
   }
   if (currentTries >= MAX_TRIES)
   {
@@ -397,26 +402,5 @@ int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expe
     return -1;
   }
   printf("\nDEBUG: END WRITEANDPROCESSREPLY\n");
-  return 0;
-}
-
-int readAndWriteReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field)
-{
-  printf("\nDEBUG: START READANDPROCESSREPLY\n");
-
-  while (currentTries++ < MAX_TRIES)
-  {
-    if (processReply(sp_fd, getAddress(/*I dont know what put here*/, expected_control_field), expected_control_field) == 0)
-    {
-      write(sp_fd, frame_to_write, frame_size);
-      return 0;
-    }
-  }
-  if (currentTries >= MAX_TRIES)
-  {
-    printf("\nMAX TRIES REACHED\n");
-    return -1;
-  }
-  printf("\nDEBUG: END READANDPROCESSREPLY\n");
   return 0;
 }
