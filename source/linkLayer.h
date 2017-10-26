@@ -45,7 +45,7 @@ int alarm_handler();
 * Caller is usued to select the address value.
 * If control field = SET | DISC | UA -> sequence_number should be -1;
 */
-void buildControlFrame(char *frame, int caller, char control_field, long sequence_number);
+void buildControlFrame(unsigned char *frame, int caller, unsigned char control_field, long sequence_number);
 
 /**
 * Creates an Information Frame.
@@ -53,7 +53,7 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 * Invokes byte stuffing.
 * frame_size is updated with the new size of the created frame;
 */
-void buildDataFrame(char **frame, char *data, int data_size, unsigned long *frame_size, long sequence_number);
+void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number);
 
 /**
 * Does byte stuffing on frame.
@@ -72,7 +72,7 @@ void byteUnstuffing(unsigned char **frame, unsigned long *frame_size);
  * caller - Who called the function: SENDER or RECEIVER
  * Returns: The address that should be used.
  * */
-unsigned char getAddress(int caller, char control_field);
+unsigned char getAddress(int caller, unsigned char control_field);
 
 /**
  * Returns the Block Check Character of the data array.

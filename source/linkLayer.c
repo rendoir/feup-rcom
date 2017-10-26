@@ -1,13 +1,15 @@
 #include "linkLayer.h"
 
+/* Uncomment to use them
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
 static char last_frame_accepted = 1;
+*/
 
 int flag = 0;
 unsigned int currentTries = 0;
 
-unsigned char getAddress(int caller, char control_field)
+unsigned char getAddress(int caller, unsigned char control_field)
 {
   if (control_field == C_SET || control_field == C_DISC)
   {
@@ -37,7 +39,7 @@ unsigned char getBCC(unsigned char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrame(char *frame, int caller, char control_field, long sequence_number)
+void buildControlFrame(unsigned char *frame, int caller, unsigned char control_field, long sequence_number)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
@@ -55,20 +57,20 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
   frame[4] = FLAG;
 }
 
-void buildDataFrame(char **frame, char *data, int data_size, unsigned long *frame_size, long sequence_number)
+void buildDataFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   *frame_size = data_size + 6;
-  (*frame) = (char *)malloc(*frame_size * sizeof(char));
+  (*frame) = (unsigned char *)malloc(*frame_size * sizeof(char));
   (*frame)[0] = FLAG;
   (*frame)[1] = A_SENDER_COMMAND;
-  (*frame)[2] = (char)((sequence_number) % 2) << 6;
+  (*frame)[2] = (unsigned char)((sequence_number) % 2) << 6;
   (*frame)[3] = (*frame)[1] ^ (*frame)[2];
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
 
-  int i = 0;
+  unsigned long i = 0;
   for (i = 0; i < *frame_size; i++)
   {
     printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
@@ -82,21 +84,21 @@ void buildDataFrame(char **frame, char *data, int data_size, unsigned long *fram
   printf("\nDEBUG: END BUILDDATAFRAME\n");
 }
 
-void byteStuffing(char **frame, unsigned long *frame_size)
+void byteStuffing(unsigned char **frame, unsigned long *frame_size)
 {
   printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
   int allocated_space = *frame_size;
   for (i = 4; i < *frame_size - 1; i++)
   {
-    char currentByte = (*frame)[i];
+    unsigned char currentByte = (*frame)[i];
     if (currentByte == FLAG || currentByte == ESCAPE)
     {
       (*frame)[i] = currentByte ^ STUFF_XOR;
       if (allocated_space <= *frame_size)
       {
         allocated_space = 2 * allocated_space;
-        if (realloc(*frame, allocated_space * sizeof(char)) == NULL)
+        if (realloc(*frame, allocated_space * sizeof(unsigned char)) == NULL)
         {
           perror("Error realloc memory for byte stuffing");
         }
@@ -333,7 +335,7 @@ int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 
 int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
 {
-  int returnValue = readFrameHeader(sp_fd, frame_header);
+  int returnValue = readFrameHeader(sp_fd, frame_header, 1);
   unsigned char *data_bcc2;
   unsigned long *data_bcc2_size;
   if (returnValue == 1)
