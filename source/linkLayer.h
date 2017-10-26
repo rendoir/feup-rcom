@@ -23,18 +23,7 @@ typedef struct
 {
 	char address_field;
 	char control_field;
-	char bcc1;
-	char *data;
-	unsigned long data_allocated_space;
-	char bcc2;
-} DataStruct;
-
-typedef struct
-{
-	char address_field;
-	char control_field;
-	char bcc1;
-} ControlStruct;
+} Frame_Header;
 
 typedef enum {
 	START,
@@ -48,7 +37,7 @@ typedef enum {
 /**
 * Alarm Handler
 */
-void alarm_handler();
+int alarm_handler();
 
 /**
 * Builds a control packet and returns it on the frame parameter.
@@ -76,7 +65,7 @@ void byteStuffing(char **frame, unsigned long *frame_size);
 * Does byte unstuffing on frame.
 * frame_size is updates as reallocs are made.
 */
-void byteUnstuffing(char **frame, unsigned long *frame_size);
+void byteUnstuffing(unsigned char **frame, unsigned long *frame_size);
 
 /**
  * Returns the Address that should be used on a control frame.
@@ -88,7 +77,7 @@ unsigned char getAddress(int caller, char control_field);
 /**
  * Returns the Block Check Character of the data array.
  * */
-unsigned char getBCC(char *data, int data_size);
+unsigned char getBCC(unsigned char *data, int data_size);
 
 /**
 * Opens/establishes the connection.
@@ -135,20 +124,24 @@ int llcloseSender(int sp_fd);
 int llcloseReceiver(int sp_fd);
 
 /*
-* State Machine that analysis control frames received.
-* Returns 0 in case of success. -1 if reached unexpected state.
-* control_struct is filled with the frame read.
-*/
-int readControlFrame(int sp_fd, char expected_address, char expected_control_field, ControlStruct *control_struct);
-
-/*
 * State machine that analysis data frames received.
 * data_struct is filled with the frame read only if no errors detected and not duplicated.
 * does not return if error in bcc1, address or control fields.
-* Returns: 0 if no errors detected or if errors detected but duplicated -> should trigger a RR.
-* -1 if error in bcc2 or incorrect size-> should trigger a REJ.
+* Returns: 0 if no errors detected or if errors detected in bcc2 but duplicated -> should trigger a RR.
+* -1 if error in bcc2 -> should trigger a REJ.
 */
 int readDataFrame(int sp_fd, char address_expected, char expected_control_field, DataStruct *data_struct);
+
+/*
+* State machine that checks frame headers.
+* Returns 0 if frame = expected frame.
+* Returns 1 if frame duplicated with no errors.
+* Returns 2 if it is a C_REJ frame not duplicated.
+* If errors detected, it will not return;
+*/
+int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData);
+
+int processReply(int sp_fd, char address_expected, char expected_control_field);
 
 /**
 * Writes frame_to_write to sp_fd.
@@ -157,6 +150,8 @@ int readDataFrame(int sp_fd, char address_expected, char expected_control_field,
 * If num_tries >= MAX_TRIES -> return -1;
 * If reply = C_REJ -> return -2 (should be called again).
 */
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size);
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field);
+
+int readAndWriteReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field);
 
 #endif // LINK_LAYER_H

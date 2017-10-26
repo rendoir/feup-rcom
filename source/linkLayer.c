@@ -1,13 +1,11 @@
 #include "linkLayer.h"
 
-int main()
-{
-  return 0;
-}
-
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
 static char last_frame_accepted = 1;
+
+int flag = 0;
+unsigned int currentTries = 0;
 
 unsigned char getAddress(int caller, char control_field)
 {
@@ -34,9 +32,8 @@ unsigned char getBCC(char *data, int data_size)
   unsigned char bcc = 0;
   int i;
   for (i = 0; i < data_size; i++)
-  {
     bcc = bcc ^ data[i];
-  }
+
   return bcc;
 }
 
@@ -44,6 +41,7 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
+
   if (sequence_number == -1)
   {
     frame[2] = control_field;
@@ -52,6 +50,7 @@ void buildControlFrame(char *frame, int caller, char control_field, long sequenc
   {
     frame[2] = ((sequence_number % 2) << 7) + control_field;
   }
+
   frame[3] = frame[1] ^ frame[2];
   frame[4] = FLAG;
 }
@@ -74,6 +73,7 @@ void buildDataFrame(char **frame, char *data, int data_size, unsigned long *fram
   {
     printf("DEBUG: Data Frame[%d] == 0x%02X\n", i, *frame[i]);
   }
+
   byteStuffing(frame, frame_size);
   for (i = 0; i < *frame_size; i++)
   {
@@ -108,7 +108,7 @@ void byteStuffing(char **frame, unsigned long *frame_size)
   printf("\nDEBUG: END BYTESTUFFING\n");
 }
 
-void byteUnstuffing(char **frame, unsigned long *frame_size)
+void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
 {
   printf("\nDEBUG: START BYTEUNSTUFFING\n");
   int i;
@@ -143,23 +143,17 @@ int llopen(char *port, int caller)
   printf("\nDEBUG: START LLOPEN\n");
   int fileDescriptor = openSerialPort(port, caller);
   if (fileDescriptor < 0)
-  {
     return -1;
-  }
+
   if (setNewSettings(fileDescriptor, caller) < 0)
-  {
     return -1;
-  }
 
   int returnValue;
+
   if (caller == SENDER)
-  {
     returnValue = llopenSender(fileDescriptor);
-  }
   else if (caller == RECEIVER)
-  {
     returnValue = llopenReceiver(fileDescriptor);
-  }
 
   printf("\nDEBUG: END LLOPEN\n");
   return returnValue;
@@ -170,6 +164,7 @@ int llopenSender(int fileDescriptor)
   printf("\nDEBUG: START LLOPENSENDER\n");
   char set_frame[5];
   buildControlFrame(set_frame, SENDER, C_SET, -1);
+  writeAndReadReply(fileDescriptor, set_frame, sizeof(set_frame), C_UA);
 
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
@@ -179,62 +174,55 @@ int llopenReceiver(int fileDescriptor)
 {
   printf("\nDEBUG: START LLOPENRECEIVER\n");
   char ua_frame[5];
+
   buildControlFrame(ua_frame, RECEIVER, C_UA, -1);
+  writeAndReadReply(fileDescriptor, ua_frame, sizeof(ua_frame), C_SET);
 
   printf("\nDEBUG: END LLOPENRECEIVER\n");
+  return 0;
 }
 
-int readFromFileToArray(int sp_fd, char **frame_received, int min_size)
+int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
 {
-  int num_flags_received = 0;
-  int frame_size = 0;
-  int frame_allocated_space = min_size;
-  (*frame_received) = malloc(frame_allocated_space * sizeof(char));
-  char read_char;
-  while (num_flags_received < 2)
+  (*data_size) = 0;
+  unsigned long frame_allocated_space = 1;
+  (*data) = malloc(frame_allocated_space * sizeof(unsigned char));
+  unsigned char read_char;
+  while (1)
   {
     read(sp_fd, &read_char, 1);
     if (read_char == FLAG)
     {
-      num_flags_received++;
+      break;
     }
-    if (frame_size >= frame_allocated_space)
+    if ((*data_size) >= frame_allocated_space)
     {
       frame_allocated_space = frame_allocated_space * 2;
-      if (realloc((*frame_received), frame_allocated_space) == NULL)
+      if (realloc((*data), frame_allocated_space) == NULL)
       {
         perror("Error realloc memory for read data frame");
+        return -1;
       }
     }
-    (*frame_received)[frame_size++] = read_char;
-  }
-  if (frame_size < min_size)
-  {
-    printf("Frame size should not be smaller than %d bytes", DATA_FRAME_MIN_SIZE);
-    return -1;
+    (*data)[(*data_size)++] = read_char;
   }
   return 0;
 }
 
-int readControlFrame(int sp_fd, char expected_address_field, char expected_control_field, ControlStruct *control_struct)
-{
-  char *control_frame = NULL;
-  readFromFileToArray(sp_fd, &control_frame, 5);
-  stateMachine(control_frame, expected_address_field, expected_control_field, 0);
-  control_struct->address_field = control_frame[1]; // or expected_address_field
-  control_struct->control_field = control_frame[2]; // or expected_control_field
-  control_struct->bcc1 = control_frame[3];
-}
-
-void stateMachine(char *frame_received, char expected_address_field, char expected_control_field, int isData)
+int readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
   State state = START;
   unsigned long frame_index = 0;
-  char received_address;
-  char received_control;
+  char read_char;
+  int isDuplicated = 0;
+  int isReject = 0;
   while (state != STOP)
   {
-    char currentByte = frame_received[frame_index++];
+    if (state == BCC1_OK && isData)
+    {
+      break;
+    }
+    char currentByte = read(sp_fd, &read_char, 1);
     switch (state)
     {
     case START:
@@ -247,10 +235,10 @@ void stateMachine(char *frame_received, char expected_address_field, char expect
     }
     case FLAG_REC:
     {
-      if (currentByte == expected_address_field)
+      received_address = currentByte;
+      if (currentByte == expected_frame_header->address_field)
       {
         state = A_REC;
-        received_address = currentByte;
       }
       else if (currentByte != FLAG)
       {
@@ -260,15 +248,31 @@ void stateMachine(char *frame_received, char expected_address_field, char expect
     }
     case A_REC:
     {
-      if (currentByte == expected_control_field)
+      received_control = currentByte;
+      char R = currentByte >> 7;
+      char notR = R ^ 1;
+      if (currentByte == expected_frame_header->control_field)
       {
-        received_control = currentByte;
         state = C_REC;
       }
-      else if (currentByte == (expected_control_field ^ 0x40))
+      else if (isData)
       {
-        isDuplicated = 1;
+        if (currentByte == (expected_frame_header->address_field ^ 0x40))
+        {
+          state = C_REC;
+          isDuplicated = 1;
+        }
+      }
+      else if (currentByte == (C_REJ + (R << 7)))
+      {
         state = C_REC;
+        isReject = 1;
+      }
+      else if (currentByte == (C_REJ + (notR << 7)))
+      {
+        state = C_REC;
+        isDuplicated = 1;
+        isReject = 1;
       }
       else if (currentByte == FLAG)
       {
@@ -284,7 +288,6 @@ void stateMachine(char *frame_received, char expected_address_field, char expect
     {
       if (currentByte == (received_address ^ received_control))
       {
-        // If Bcc is correct
         state = BCC1_OK;
       }
       else if (currentByte == FLAG)
@@ -299,219 +302,87 @@ void stateMachine(char *frame_received, char expected_address_field, char expect
     }
     case BCC1_OK:
     {
-      if (isData)
+      if (currentByte == FLAG)
       {
-        if (currentByte != FLAG)
-        {
-          state = STOP;
-        }
-        else
-        {
-          state = FLAG_REC;
-        }
+        state = STOP;
       }
       else
       {
-        if (currentByte == FLAG)
-        {
-          state = STOP;
-        }
-        else
-        {
-          state = START;
-        }
+        state = START;
       }
       break;
     }
     default:
     {
       printf("State Machine Reached unexpected state\n");
-      return;
-    }
-    }
-  }
-}
-
-int readDataFrame(int sp_fd, char expected_address, char expected_control_field, DataStruct *data_struct)
-{
-  State state = START;
-  char read_char;
-  int isDuplicated = 0;
-  int num_flags_received = 0;
-  unsigned long frame_allocated_space = 7;
-  unsigned long frame_size = 0;
-  char *frame_received = malloc(frame_allocated_space);
-  while (num_flags_received < 2)
-  {
-    read(sp_fd, &read_char, 1);
-    if (read_char == FLAG)
-    {
-      num_flags_received++;
-    }
-    if (frame_size >= frame_allocated_space)
-    {
-      frame_allocated_space = frame_allocated_space * 2;
-      if (realloc(frame_received, frame_allocated_space) == NULL)
-      {
-        perror("Error realloc memory for read data frame");
-      }
-    }
-    frame_received[frame_size++] = read_char;
-  }
-  if (frame_size < DATA_FRAME_MIN_SIZE)
-  {
-    printf("Data frame size should not be smaller than %d bytes", DATA_FRAME_MIN_SIZE);
-    return -1;
-  }
-
-  byteUnstuffing(&frame_received, &frame_size);
-  data_struct->data_allocated_space = 1;
-  data_struct->data = malloc(data_struct->data_allocated_space);
-  unsigned long frame_index = 0;
-  while (state != STOP)
-  {
-    char currentByte = frame_received[frame_index++];
-    switch (state)
-    {
-    case START:
-    {
-      if (currentByte == FLAG)
-      {
-        state = FLAG_REC;
-      }
-      break;
-    }
-    case FLAG_REC:
-    {
-      if (currentByte == expected_address)
-      {
-        state = A_REC;
-        data_struct->address_field = currentByte;
-      }
-      else if (currentByte != FLAG)
-      {
-        state = START;
-      }
-      break;
-    }
-    case A_REC:
-    {
-      if (currentByte == expected_control_field)
-      {
-        data_struct->control_field = currentByte;
-        state = C_REC;
-      }
-      else if (currentByte == (expected_control_field ^ 0x40))
-      {
-        isDuplicated = 1;
-        state = C_REC;
-      }
-      else if (currentByte == FLAG)
-      {
-        state = FLAG_REC;
-      }
-      else
-      {
-        state = START;
-      }
-      break;
-    }
-    case C_REC:
-    {
-      if (currentByte == (data_struct->address_field ^ data_struct->control_field))
-      {
-        // If Bcc is correct
-        state = BCC1_OK;
-        data_struct->bcc1 = currentByte;
-      }
-      else if (currentByte == FLAG)
-      {
-        state = FLAG_REC;
-      }
-      else
-      {
-        state = START;
-      }
-
-      break;
-    }
-    case BCC1_OK:
-    {
-      if (currentByte != FLAG)
-      {
-        state = STOP;
-      }
-      else
-      {
-        state = FLAG_REC;
-      }
-      break;
-    }
-    default:
-    {
-      printf("Reached unexpected state\n");
       return -1;
     }
     }
   }
-  // If execution arrives here, is because there have been no errors previously.
-
-  //Read data and Check BCC2
-  unsigned char expected_bcc2 = frame_received[frame_size - 2];
-  unsigned char bcc2 = 0;
-  unsigned char error_in_bcc2 = 0;
-  //frame_index = 4 is the beginning of data on a data frame.
-  for (frame_index = 4; frame_index < frame_size - 2; frame_index++)
-  {
-    if ((frame_index - 4) >= data_struct->data_allocated_space)
-    {
-      data_struct->data_allocated_space = 2 * data_struct->data_allocated_space;
-      if (realloc(data_struct->data, data_struct->data_allocated_space) == NULL)
-      {
-        perror("Error reallocating memomy for data_struct->data");
-      }
-    }
-    data_struct->data[frame_index - 4] = frame_received[frame_index];
-    bcc2 = bcc2 ^ frame_received[frame_index];
-  }
-
-  free(frame_received);
-  frame_received = NULL;
-
-  if (bcc2 != expected_bcc2)
-  {
-    error_in_bcc2 = 1;
-  }
-
   if (isDuplicated)
   {
-    free(data_struct);
-    data_struct = NULL; //Setting unused pointers to NULL is a defensive style, protecting against dangling pointer bugs.
+    return 1;
+  }
+  if (isReject)
+  {
+    return 2;
+  }
+  return 0;
+}
+
+int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
+{
+  int returnValue = readFrameHeader(sp_fd, frame_header);
+  unsigned char *data_bcc2;
+  unsigned long *data_bcc2_size;
+  if (returnValue == 1)
+  {
+    // If no errors detected or it is duplicated
+    // Should trigger a receiver ready.
+    flushSP(sp_fd);
+    return 0;
+  }
+  readFromFileToArray(sp_fd, &data_bcc2, data_bcc2_size);
+  byteUnstuffing(&data_bcc2, data_bcc2_size);
+  (*data_size) = *data_bcc2_size;
+  char received_bcc2 = data_bcc2[data_bcc2_size - 1];
+  (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
+  memcpy((*data_unstuffed), data_bcc2, (*data_size));
+  char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
+  if (calculated_bcc2 == received_bcc2)
+  {
     return 0;
   }
   else
   {
-    if (error_in_bcc2)
-    {
-      free(data_struct);
-      data_struct = NULL; //If a dangling pointer is accessed after it is freed, you may read or overwrite random memory.
-      return -1;
-    }
-    else
-    {
-      return 0;
-    }
+    // Error in BCC2 -> should trigger a C_REJ
+    return -1;
   }
 }
 
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size)
+int alarmHandler()
+{
+  printf("Alarm #%d\n", currentTries);
+  flag = 1;
+  currentTries++;
+  return 0;
+}
+
+int processReply(int sp_fd, char address_expected, char expected_control_field)
+{
+  alarm(3);
+  ControlStruct control_struct;
+  return readControlFrame(sp_fd, address_expected, expected_control_field, &control_struct);
+}
+
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field)
 {
   printf("\nDEBUG: START WRITEANDPROCESSREPLY\n");
-  unsigned int currentTries = 0;
+
   while (currentTries++ < MAX_TRIES)
   {
     write(sp_fd, frame_to_write, frame_size);
-    if (processReply() == 0)
+    if (processReply(sp_fd, getAddress(/*I dont know what put here*/, expected_control_field), expected_control_field) == 0)
     {
       return 0;
     }
@@ -522,4 +393,26 @@ int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size)
     return -1;
   }
   printf("\nDEBUG: END WRITEANDPROCESSREPLY\n");
+  return 0;
+}
+
+int readAndWriteReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field)
+{
+  printf("\nDEBUG: START READANDPROCESSREPLY\n");
+
+  while (currentTries++ < MAX_TRIES)
+  {
+    if (processReply(sp_fd, getAddress(/*I dont know what put here*/, expected_control_field), expected_control_field) == 0)
+    {
+      write(sp_fd, frame_to_write, frame_size);
+      return 0;
+    }
+  }
+  if (currentTries >= MAX_TRIES)
+  {
+    printf("\nMAX TRIES REACHED\n");
+    return -1;
+  }
+  printf("\nDEBUG: END READANDPROCESSREPLY\n");
+  return 0;
 }

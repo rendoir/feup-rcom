@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include "macros.h"
 
@@ -14,15 +15,20 @@
  * depending on caller if is TRANSMITTER or RECEIVER
  */
 
-int initInputMode(struct termios* new_tio, int caller);
+int initInputMode(struct termios *new_tio, int caller);
 
 //TODO: comment
 int setNewSettings(int sp_fd, int caller);
 
 //TODO: comment
-int openSerialPort(char* port, int caller);
+int openSerialPort(char *port, int caller);
 
 //TODO: comment
 int closeSerialPort(const int *sp_fd);
+
+/**
+ * Flushes both data received but not read, and data written but not transmitted.
+ * */
+void flushSP(int sp_fd);
 
 #endif
