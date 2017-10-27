@@ -24,7 +24,7 @@ typedef struct
 {
 	char address_field;
 	char control_field;
-} Frame_Header;	
+} Frame_Header;
 
 typedef enum {
 	START,
@@ -59,8 +59,9 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
 * It allocates space for the frame.
 * Invokes byte stuffing.
 * frame_size is updated with the new size of the created frame;
+* Returns the new frame size.
 */
-void buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long *frame_size, long sequence_number);
+unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, long sequence_number);
 
 /**
 * Does byte stuffing on frame.
@@ -108,6 +109,12 @@ int llopenReceiver(int fileDescriptor);
 int llopenSender(int sp_fd);
 
 /**
+ * Reads a data frame. Returns the size of the data read.
+ *
+ */
+int llread(int sp_fd, char **data);
+
+/**
 * Builds the data frame.
 * Sends the data frame until Receiver Ready or MAX_TRIES are achieved.
 */
@@ -147,5 +154,17 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
 * If errors detected, it will not return;
 */
 Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData);
+
+/**
+ * Read data from a file to an array.
+ * Returns 0 in case of success, -1 if some error happens with malloc.
+ * */
+int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size);
+
+/**
+ * Writes a frame to sp_fd, waits and reads the reply.
+ * Returns 0 if read reply in less than MAX_TRIES. -1 otherwise.
+ * */
+int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field, int caller);
 
 #endif // LINK_LAYER_H
