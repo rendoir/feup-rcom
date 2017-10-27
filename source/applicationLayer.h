@@ -18,26 +18,26 @@ typedef struct {
   int mode;            //SENDER or RECEIVER
   char* port;          // /dev/ttySx
 
-  long long bytes_per_data_packet;
+  unsigned long long bytes_per_data_packet;
 
   //File
-  char* file_path;
-  char* file_data;
-  long long file_size;
-  long long bytes_processed;
+  unsigned char* file_path;
+  unsigned char* file_data;
+  unsigned long long file_size;
+  unsigned long long bytes_processed;
 } ApplicationLayer;
 
 typedef struct {
-  char* frame;
-  char* file_name;
-  int frame_size;
-  long long file_size;
+  unsigned char* frame;
+  unsigned char* file_name;
+  unsigned int frame_size;
+  unsigned long long file_size;
 } ControlFrame;
 
 typedef struct {
-  char* frame;
-  char* data;
-  int frame_size;
+  unsigned char* frame;
+  unsigned char* data;
+  unsigned int frame_size;
 } DataFrame;
 
 //Common

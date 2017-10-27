@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <limits.h>
 
-static long serial_number = 0;
+static unsigned long long serial_number = 0;
 
 int main(int argc, char** argv) {
   ApplicationLayer app;
@@ -20,7 +20,7 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
     printUsage();
 
   app->bytes_per_data_packet = 1024;
-  app->bytes_processed = 0;
+  app->bytes_processed = 0;unsigned long 
   app->port = malloc(12);
   sprintf(app->port, "/dev/ttyS%s", argv[1]);
 
