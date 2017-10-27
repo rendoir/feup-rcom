@@ -4,7 +4,6 @@ int flag = 0;
 
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
-static char last_frame_accepted = 1;
 
 unsigned char getAddress(int caller, unsigned char control_field)
 {
@@ -79,7 +78,7 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
     printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, *frame[i]);
   }
   printf("\nDEBUG: END BUILDDATAFRAME\n");
-  return
+  return frame_size;
 }
 
 void byteStuffing(unsigned char **frame, unsigned long *frame_size)
@@ -453,7 +452,7 @@ int alarmHandler(int time)
   return 0;
 }
 
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field, int caller)
+int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
 {
   printf("\nDEBUG: START WRITEANDREADREPLY\n");
 

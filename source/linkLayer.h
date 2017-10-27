@@ -112,13 +112,13 @@ int llopenSender(int sp_fd);
  * Reads a data frame. Returns the size of the data read.
  *
  */
-int llread(int sp_fd, char **data);
+int llread(int sp_fd, unsigned char **data);
 
 /**
 * Builds the data frame.
 * Sends the data frame until Receiver Ready or MAX_TRIES are achieved.
 */
-int llwrite(int sp_fd, char *data, int data_size);
+int llwrite(int sp_fd, unsigned char *data, unsigned long data_size);
 
 /**
 * Closes the connection.
@@ -165,6 +165,6 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
  * Writes a frame to sp_fd, waits and reads the reply.
  * Returns 0 if read reply in less than MAX_TRIES. -1 otherwise.
  * */
-int writeAndReadReply(int sp_fd, char *frame_to_write, int frame_size, char expected_control_field, int caller);
+int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller);
 
 #endif // LINK_LAYER_H
