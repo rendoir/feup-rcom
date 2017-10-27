@@ -20,7 +20,7 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
     printUsage();
 
   app->bytes_per_data_packet = 1024;
-  app->bytes_processed = 0;unsigned long 
+  app->bytes_processed = 0;
   app->port = malloc(12);
   sprintf(app->port, "/dev/ttyS%s", argv[1]);
 
