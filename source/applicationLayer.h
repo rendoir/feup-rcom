@@ -21,7 +21,7 @@ typedef struct {
   unsigned long long bytes_per_data_packet;
 
   //File
-  unsigned char* file_path;
+  char* file_path;
   unsigned char* file_data;
   unsigned long long file_size;
   unsigned long long bytes_processed;
@@ -29,7 +29,7 @@ typedef struct {
 
 typedef struct {
   unsigned char* frame;
-  unsigned char* file_name;
+  char* file_name;
   unsigned int frame_size;
   unsigned long long file_size;
 } ControlFrame;
