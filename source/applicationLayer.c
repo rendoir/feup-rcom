@@ -9,16 +9,17 @@ int main(int argc, char* argv[]) {
       mode = argv[2];
     }
   }
-  logToFile("MAIN: Start APP");
+  logToFile(" MAIN: Start APP");
   ApplicationLayer app;
   initApp(&app, argc, argv);
   run(&app);
+  logToFile(" MAIN: End APP");
   return 0;
 }
 
 //Common
 int initApp(ApplicationLayer *app, int argc, char** argv) {
-  logToFile("INITAPP: Start initApp");
+  logToFile("   INITAPP: Start initApp");
   if(argc < 3 || argc > 5)
     printUsage();
 
@@ -42,11 +43,12 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
     if(argc > 4)
       app->bytes_per_data_packet = atoll(argv[4]);
   }
-  logToFile("INITAPP: End initApp");
+  logToFile("   INITAPP: End initApp");
   return 0;
 }
 
 void run(ApplicationLayer *app){
+  logToFile("   RUN: Start");
   if(initConnection(app) < 0)
     exit(1);
   if(app->mode == SENDER) {
@@ -58,8 +60,12 @@ void run(ApplicationLayer *app){
     printFileData(app);
     writeFileData(app);
   }
+  logToFile("     CLOSECONNECTION: Start");
   if(closeConnection(app) < 0)
-    exit(1);
+    logToFile("     CLOSECONNECTION: Exit with error");
+    exit(1);  
+  logToFile("     CLOSECONNECTION: End");
+  logToFile("   RUN: End");
 }
 
 int initConnection(ApplicationLayer *app) {
