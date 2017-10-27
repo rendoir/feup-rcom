@@ -33,4 +33,6 @@
 
 #define DATA_FRAME_MIN_SIZE 7
 
+extern char *mode;
+
 #endif

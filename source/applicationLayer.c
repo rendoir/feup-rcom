@@ -1,13 +1,15 @@
 #include "applicationLayer.h"
-#include "linkLayer.h"
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <limits.h>
 
 static unsigned long long serial_number = 0;
+char* mode;
 
-int main(int argc, char** argv) {
+int main(int argc, char* argv[]) {
+  if(argc >= 3){
+    if(argv[2] != NULL){
+      mode = argv[2];
+    }
+  }
+  logToFile("MAIN: Start APP");
   ApplicationLayer app;
   initApp(&app, argc, argv);
   run(&app);
@@ -16,6 +18,7 @@ int main(int argc, char** argv) {
 
 //Common
 int initApp(ApplicationLayer *app, int argc, char** argv) {
+  logToFile("INITAPP: Start initApp");
   if(argc < 3 || argc > 5)
     printUsage();
 
@@ -39,7 +42,7 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
     if(argc > 4)
       app->bytes_per_data_packet = atoll(argv[4]);
   }
-
+  logToFile("INITAPP: End initApp");
   return 0;
 }
 

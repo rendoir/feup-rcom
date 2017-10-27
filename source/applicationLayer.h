@@ -1,6 +1,12 @@
 #ifndef APP_LAYER_H
 #define APP_LAYER_H
 
+#include <stdio.h>
+#include <limits.h>
+#include <string.h>
+#include "utils.h"
+#include "linkLayer.h"
+
 #define SENDER   0
 #define RECEIVER 1
 

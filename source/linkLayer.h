@@ -1,7 +1,6 @@
 #ifndef LINK_LAYER_H
 #define LINK_LAYER_H
 
-#include <stdlib.h>
 #include <string.h> //used for memcpy
 #include "serialPort.h"
 #include "alarm.h"
