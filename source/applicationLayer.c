@@ -93,13 +93,16 @@ int send(ApplicationLayer *app){
   ControlFrame control_frame;
   DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
-  llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size);
+  if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
+    exit(1);
   while (app->bytes_processed < app->file_size) {
 	  buildDataFrame(app, &data_frame);
-    llwrite(app->sp_fd, data_frame.frame, control_frame.frame_size);
+    if(llwrite(app->sp_fd, data_frame.frame, control_frame.frame_size) < 0)
+      exit(1);
   }
   buildEndFrame(app, &control_frame);
-  llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size);
+  if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
+    exit(1);
   return 0;
 }
 
