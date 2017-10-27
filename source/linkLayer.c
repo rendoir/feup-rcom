@@ -7,6 +7,7 @@ static char read_sequence_number = 0;
 
 unsigned char getAddress(int caller, unsigned char control_field)
 {
+  logToFile("GETADRESS: Start");
   if (control_field == C_SET || control_field == C_DISC)
   {
     if (caller == SENDER)

@@ -1,4 +1,9 @@
-#include <stdio.h>
+#ifndef UTILS_H
+#define UTILS_H
+
+#include <unistd.h>
+#include <fcntl.h>
+#include <string.h>
 #include <time.h>
 #include "macros.h"
 
@@ -18,3 +23,5 @@ void removeValueAt(unsigned char *array, int index, unsigned long *array_size);
 * function to log the process when DEBUG flag is set
 */
 void logToFile(const char *);
+
+#endif
