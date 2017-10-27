@@ -173,13 +173,13 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 int receive(ApplicationLayer *app) {
   ControlFrame control_frame;
   DataFrame	data_frame;
-  llread(app->sp_fd, &control_frame->frame);
+  llread(app->sp_fd, &control_frame.frame);
   disassembleControlFrame(app, &control_frame);
   while (app->bytes_processed < app->file_size) {
-    llread(app->sp_fd, &data_frame->frame);
+    llread(app->sp_fd, &data_frame.frame);
     disassembleDataFrame(app, &data_frame);
   }
-  llread(app->sp_fd, &control_frame->frame);
+  llread(app->sp_fd, &control_frame.frame);
   disassembleControlFrame(app, &control_frame);
   return 0;
 }
@@ -236,7 +236,6 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
 
 int writeFileData(ApplicationLayer *app) {
   FILE *file_ptr;
-  long long file_length;
 
   file_ptr = fopen(app->file_path, "w");
   if(file_ptr == NULL)
