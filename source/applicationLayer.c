@@ -1,7 +1,9 @@
 #include "applicationLayer.h"
+#include "linkLayer.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <limits.h>
 
 static long serial_number = 0;
 
@@ -30,7 +32,7 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
 
   if(app->mode == SENDER) {
     if(argc >= 4) {
-      app->file_path = malloc(128);
+      app->file_path = malloc(NAME_MAX);
       strcpy(app->file_path, argv[3]);
     } else
       printUsage();
@@ -41,35 +43,28 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
   return 0;
 }
 
-void printFileData(ApplicationLayer *app) {
-  printf("\nFile data sent:\n");
-  for(int i = 0; i < app->file_size; i++)
-    printf("%d ", app->file_data[i]);
-  printf("\n");
-}
-
 void run(ApplicationLayer *app){
   if(initConnection(app) < 0)
     exit(1);
   if(app->mode == SENDER) {
 	  readFileData(app);
+    printFileData(app);
     send(app);
   } else if (app->mode == RECEIVER) {
     receive(app);
+    printFileData(app);
   }
   if(closeConnection(app) < 0)
     exit(1);
 }
 
 int initConnection(ApplicationLayer *app) {
-  //app->sp_fd = llopen(app->port, app->mode);
-  //return app->sp_fd;
-  return 1;
+  app->sp_fd = llopen(app->port, app->mode);
+  return app->sp_fd;
 }
 
 int closeConnection(ApplicationLayer *app) {
-  //return llclose(app->sp_fd, app->mode);
-  return 0;
+  return llclose(app->sp_fd, app->mode);
 }
 
 //Sender
@@ -95,9 +90,13 @@ int send(ApplicationLayer *app){
   ControlFrame control_frame;
   DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
-  while (app->bytes_processed < app->file_size)
+  llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size);
+  while (app->bytes_processed < app->file_size) {
 	  buildDataFrame(app, &data_frame);
+    llwrite(app->sp_fd, data_frame.frame, control_frame.frame_size);
+  }
   buildEndFrame(app, &control_frame);
+  llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size);
   return 0;
 }
 
@@ -117,6 +116,7 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
 	  frame->frame[i] = file_size_str[j];
 	  j++;
   }
+  free(file_size_str);
   frame->frame[3 + size_of_file_size] = TYPE_FILE_NAME;
   frame->frame[4 + size_of_file_size] = size_of_file_name;
   char* file_name_str = malloc(size_of_file_name);
@@ -126,6 +126,8 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
 	  frame->frame[i] = file_name_str[j];
 	  j++;
   }
+  free(file_name_str);
+  frame->frame_size = 5 + size_of_file_size + size_of_file_name;
 
   //Debug
   printf("\nBuilt control frame:\n");
@@ -148,7 +150,6 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 	frame->data = malloc(bytes_to_write);
 	for (int i = 0; i < bytes_to_write; i++)
 		frame->data[i] = app->file_data[app->bytes_processed++];
-
 	frame->frame = malloc(4 + bytes_to_write);
 	frame->frame[0] = control;
 	frame->frame[1] = serial;
@@ -156,6 +157,7 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 	frame->frame[3] = l1;
 	for (int i = 4; i < 4 + bytes_to_write; i++)
 		frame->frame[i] = frame->data[i - 4];
+  frame->frame_size = 4 + bytes_to_write;
 
 	//Debug
 	printf("\nBuilt data frame:\n");
@@ -168,9 +170,13 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 int receive(ApplicationLayer *app) {
   ControlFrame control_frame;
   DataFrame	data_frame;
+  llread(app->sp_fd, &control_frame->frame);
   disassembleControlFrame(app, &control_frame);
-  while (app->bytes_processed < app->file_size)
+  while (app->bytes_processed < app->file_size) {
+    llread(app->sp_fd, &data_frame->frame);
     disassembleDataFrame(app, &data_frame);
+  }
+  llread(app->sp_fd, &control_frame->frame);
   disassembleControlFrame(app, &control_frame);
   return 0;
 }
@@ -201,6 +207,8 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
   for (int i = 0; i < l2; i++)
   	printf("%d ", app->file_path[i]);
   printf("\n");
+
+  free(v1);
 }
 
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
@@ -223,7 +231,7 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   printf("\n");
 }
 
-//Utils
+//Common utils
 void printUsage() {
   printf("Usage: app port_number mode [file_path]\n");
   printf("    port_number: the serial port number to use\n");
@@ -231,4 +239,21 @@ void printUsage() {
   printf("    [file_path]: needed if the app works as a sender\n");
   printf("    [bytes_per_data_packet]: defaults to 1024\n");
   exit(1);
+}
+
+void printFileData(ApplicationLayer *app) {
+  printf("\nFile data sent:\n");
+  for(int i = 0; i < app->file_size; i++)
+    printf("%d ", app->file_data[i]);
+  printf("\n");
+}
+
+void freeControlFrame(ControlFrame *frame) {
+  free(frame->frame);
+  free(frame->file_name);
+}
+
+void freeDataFrame(DataFrame *frame){
+  free(frame->frame);
+  free(frame->data);
 }

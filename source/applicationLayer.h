@@ -30,12 +30,14 @@ typedef struct {
 typedef struct {
   char* frame;
   char* file_name;
+  int frame_size;
   long long file_size;
 } ControlFrame;
 
 typedef struct {
   char* frame;
   char* data;
+  int frame_size;
 } DataFrame;
 
 //Common
@@ -57,8 +59,10 @@ int receive(ApplicationLayer *app);
 void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame);
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
 
-//Utils
+//Common utils
 void printUsage();
 void printFileData(ApplicationLayer *app);
+void freeControlFrame(ControlFrame *frame);
+void freeDataFrame(DataFrame *frame);
 
 #endif //APP_LAYER_H
