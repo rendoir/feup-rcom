@@ -53,6 +53,7 @@ void run(ApplicationLayer *app){
   } else if (app->mode == RECEIVER) {
     receive(app);
     printFileData(app);
+    writeFileData(app);
   }
   if(closeConnection(app) < 0)
     exit(1);
@@ -73,6 +74,8 @@ int readFileData(ApplicationLayer *app) {
   long long file_length;
 
   file_ptr = fopen(app->file_path, "rb");
+  if(file_ptr == NULL)
+    exit(1);
   fseek(file_ptr, 0, SEEK_END);
   file_length = ftell(file_ptr);
   rewind(file_ptr);
@@ -229,6 +232,20 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   for (int i = 0; i < data_size; i++)
   	printf("%d ", frame->data[i]);
   printf("\n");
+}
+
+int writeFileData(ApplicationLayer *app) {
+  FILE *file_ptr;
+  long long file_length;
+
+  file_ptr = fopen(app->file_path, "w");
+  if(file_ptr == NULL)
+    exit(1);
+
+  fwrite(app->file_data, app->file_size, 1, file_ptr);
+  fclose(file_ptr);
+
+  return 0;
 }
 
 //Common utils

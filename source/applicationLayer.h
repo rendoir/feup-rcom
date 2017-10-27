@@ -58,6 +58,7 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame);
 int receive(ApplicationLayer *app);
 void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame);
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame);
+int writeFileData(ApplicationLayer *app);
 
 //Common utils
 void printUsage();
