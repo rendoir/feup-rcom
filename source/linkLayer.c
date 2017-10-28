@@ -71,12 +71,12 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
-
   unsigned long i = 0;
   for (i = 0; i < frame_size; i++)
   {
     printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
   }
+
   printf("\nDEBUG: END BUILDDATAFRAME\n");
   return frame_size;
 }
@@ -504,7 +504,7 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   frame_header_expected.control_field = expected_control_field;
 
 	for(int i = 0; i < frame_size; i++)
-		printf("%d ", frame_to_write[i]);
+		printf("0x%02x ", frame_to_write[i]);
 
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
@@ -513,13 +513,16 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
       printf("\nError writting\n");
     alarm(3);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
-    if (return_value != REJECTED && return_value != ERROR)
+    alarm(0);
+    if (return_value == OK || return_value == DUPLICATED)
     {
       printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
       logToFile("writeAndReadReply : Max tries");
-      alarm(0);
       break;
     }
+    //else if(return_value == REJECTED){
+    //  currentTries = 0;
+    //}
     printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
   }
   if (currentTries >= MAX_TRIES)
