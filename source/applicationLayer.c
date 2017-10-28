@@ -49,8 +49,10 @@ int initApp(ApplicationLayer *app, int argc, char** argv) {
 
 void run(ApplicationLayer *app){
   logToFile("   RUN: Start");
-  if(initConnection(app) < 0)
+  if(initConnection(app) < 0){
+    printf("Error init connection");
     exit(1);
+  }
   if(app->mode == SENDER) {
 	  readFileData(app);
     printFileData(app);
@@ -84,8 +86,11 @@ int readFileData(ApplicationLayer *app) {
   long long file_length;
 
   file_ptr = fopen(app->file_path, "rb");
-  if(file_ptr == NULL)
+  if(file_ptr == NULL){
+    printf("File not found\n");
     exit(1);
+  }
+
   fseek(file_ptr, 0, SEEK_END);
   file_length = ftell(file_ptr);
   rewind(file_ptr);

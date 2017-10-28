@@ -205,14 +205,16 @@ int llopen(char *port, int caller)
     return -1;
 
   if (caller == SENDER) {
-    if(llopenSender(fileDescriptor))
+    if(llopenSender(fileDescriptor) == -1){
       return -1;
+    }
   } else if (caller == RECEIVER) {
-    if(llopenReceiver(fileDescriptor))
+    if(llopenReceiver(fileDescriptor) == -1){
       return -1;
+    }
   }
 
-  printf("\nDEBUG: END LLOPEN\n");
+  printf("\nDEBUG: END LLOPEN, fd=%d\n",fileDescriptor);
   return fileDescriptor;
 }
 
@@ -221,7 +223,7 @@ int llopenSender(int fileDescriptor)
   printf("\nDEBUG: START LLOPENSENDER\n");
   unsigned char set_frame[5];
   buildControlFrameLINK(set_frame, SENDER, C_SET, -1);
-  if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) != 0){
+  if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) == -1){
     perror("Can't establish connection");
     logToFile("Error in llopenSender");
     return -1;
@@ -276,12 +278,15 @@ int llread(int sp_fd, unsigned char **data)
 
 int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
 {
+  printf("\nDEBUG: START LLWRITE\n");
   unsigned char *frame = NULL;
   unsigned char expected_control_field = C_RR ^ ((sequence_number + 1) % 2) << 7;
   unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, sequence_number);
   sequence_number++;
   byteStuffing(&frame, &frame_size);
-  return writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
+  int res = writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
+  printf("\nDEBUG: END LLWRITE\n");
+  return res;
 }
 
 int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
@@ -517,7 +522,7 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     if (return_value == OK || return_value == DUPLICATED)
     {
       printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
-      logToFile("writeAndReadReply : Max tries");
+      logToFile("writeAndReadReply : success");
       break;
     }
     //else if(return_value == REJECTED){
