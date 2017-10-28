@@ -44,7 +44,7 @@ typedef enum {
 /**
 * Alarm Handler
 */
-int alarm_handler(int);
+void alarmHandler(int);
 
 /**
 * Builds a control packet and returns it on the frame parameter.

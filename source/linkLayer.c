@@ -201,12 +201,16 @@ int llopen(char *port, int caller)
   if (setNewSettings(fileDescriptor, caller) < 0)
     return -1;
 
-  if (caller == SENDER)
+  if(setNewAlarmHandler(alarmHandler))
+    return -1;
+
+  if (caller == SENDER) {
     if(llopenSender(fileDescriptor))
       return -1;
-  else if (caller == RECEIVER)
+  } else if (caller == RECEIVER) {
     if(llopenReceiver(fileDescriptor))
       return -1;
+  }
 
   printf("\nDEBUG: END LLOPEN\n");
   return fileDescriptor;
@@ -288,7 +292,6 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
 Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
   printf("\nDEBUG: START READ FRAME HEADER\n\n");
-  printf("\nfd: %d\n", sp_fd);
   State state = START;
   unsigned char read_char;
   unsigned char received_address;
@@ -448,11 +451,10 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   }
 }
 
-int alarmHandler(int time)
+void alarmHandler(int time)
 {
-  printf("Alarm Interrupt\n");
+  printf("Alarm Interrupt %d\n", time);
   flag = 1;
-  return 0;
 }
 
 int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
@@ -470,7 +472,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
   {
-    write(sp_fd, frame_to_write, frame_size);
+    if(write(sp_fd, frame_to_write, frame_size) < frame_size)
+      printf("\nError writting\n");
     alarm(3);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     if (return_value != REJECTED && return_value != ERROR)
