@@ -497,7 +497,9 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   {
     // If frame duplicated without errors.
     // Should trigger a receiver ready.
-    flushSP(sp_fd);
+    //flushSP(sp_fd);
+    readFromFileToArray(sp_fd, &data_bcc2, &data_bcc2_size);
+    free(data_bcc2);
     return 0;
   }
 
