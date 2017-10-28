@@ -99,3 +99,103 @@
 2017-10-28 11:32:35 : Mode: receiver - readFrameHeader : State - A_REC
 2017-10-28 11:32:35 : Mode: receiver - readFrameHeader : State - A_REC
 2017-10-28 11:32:35 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:56 : Mode: receiver -  MAIN: Start APP
+2017-10-28 11:40:56 : Mode: receiver -    INITAPP: Start initApp
+2017-10-28 11:40:56 : Mode: receiver -    INITAPP: End initApp
+2017-10-28 11:40:56 : Mode: receiver -    RUN: Start
+2017-10-28 11:40:56 : Mode: receiver - GETADRESS: Start
+2017-10-28 11:40:56 : Mode: receiver - GETADRESS: Start
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - C_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - BCC1_OK not data
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : End 
+2017-10-28 11:40:57 : Mode: receiver - GETADRESS: Start
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - C_REC
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:40:57 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - C_REC
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:00 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - FLAG_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - A_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - C_REC
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - START
+2017-10-28 11:41:03 : Mode: receiver - readFrameHeader : State - START

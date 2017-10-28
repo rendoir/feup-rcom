@@ -42,7 +42,7 @@ unsigned char getBCC(unsigned char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, long sequence_number)
+void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
@@ -60,7 +60,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
   frame[4] = FLAG;
 }
 
-unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, long sequence_number)
+unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   unsigned long frame_size = data_size + 6;
@@ -262,38 +262,52 @@ int llread(int sp_fd, unsigned char **data)
 {
   Frame_Header expected_frame_header;
   unsigned long data_size;
-  unsigned char expected_control_field = (read_sequence_number % 2) << 6;
+  expected_frame_header.control_field = (read_sequence_number % 2) << 6;
+  expected_frame_header.address_field = getAddress(SENDER, expected_frame_header.control_field);
+  int res = readDataFrame(sp_fd, &expected_frame_header, data, &data_size);
   read_sequence_number++;
-  expected_frame_header.address_field = getAddress(SENDER, expected_control_field);
-  readDataFrame(sp_fd, &expected_frame_header, data, &data_size);
+  if (res == 0){
+    unsigned char rr_frame[5];
+    buildControlFrameLINK(rr_frame,RECEIVER,C_RR, read_sequence_number);
+    write(sp_fd,rr_frame,5);
+  }
+  else if (res == -1){
+    unsigned char rej_frame[5];
+    buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, read_sequence_number);
+    write(sp_fd,rej_frame,5);
+  }
   return data_size;
 }
 
 int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
 {
   unsigned char *frame = NULL;
-  unsigned char expected_control_field = C_RR ^ (write_sequence_number % 2) << 7;
-  unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, write_sequence_number++);
+  unsigned char expected_control_field = C_RR ^ ((write_sequence_number + 1) % 2) << 7;
+  unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, write_sequence_number);
+  write_sequence_number++;
   byteStuffing(&frame, &frame_size);
   return writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
 }
 
 int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
 {
+  printf("\nDEBUG: START READ FROM FILE TO ARRAY\n");
   (*data_size) = 0;
+  printf("debug");
   unsigned long frame_allocated_space = 1;
   (*data) = malloc(frame_allocated_space * sizeof(unsigned char));
   unsigned char read_char;
   while (1)
   {
     read(sp_fd, &read_char, 1);
+    printf("0x%02X\n",read_char);
     if (read_char == FLAG)
     {
       break;
     }
     if ((*data_size) >= frame_allocated_space)
     {
-      frame_allocated_space = frame_allocated_space * 2;
+      frame_allocated_space++;
       if (realloc((*data), frame_allocated_space) == NULL)
       {
         perror("Error realloc memory for read data frame");
@@ -302,6 +316,7 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
     }
     (*data)[(*data_size)++] = read_char;
   }
+  printf("\nDEBUG: END READ FROM FILE TO ARRAY\n");
   return 0;
 }
 
@@ -312,11 +327,14 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   unsigned char read_char;
   unsigned char received_address;
   unsigned char received_control;
+  printf("Expected address_field 0x%02X\n",expected_frame_header->address_field);
+  printf("Expected control_field 0x%02X\n",expected_frame_header->control_field);
   int isDuplicated = 0;
   int isReject = 0;
   flag = 0;
   while (state != STOP && !flag)
   {
+    printf("State = %d\n", state);
     if (state == BCC1_OK && isData)
     {
       logToFile("readFrameHeader : State - BBC1_OK with data");
@@ -450,8 +468,9 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
 {
   printf("\nDEBUG: START READ DATA FRAME\n");
   Reply_Status returnValue = readFrameHeader(sp_fd, frame_header, 1);
-  unsigned char *data_bcc2;
-  unsigned long *data_bcc2_size = NULL;
+  printf("Return value of frame header: %d\n",returnValue);
+  unsigned char *data_bcc2 = NULL;
+  unsigned long data_bcc2_size;
   if (returnValue == DUPLICATED)
   {
     // If frame duplicated without errors.
@@ -459,10 +478,11 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
     flushSP(sp_fd);
     return 0;
   }
-  readFromFileToArray(sp_fd, &data_bcc2, data_bcc2_size);
-  byteUnstuffing(&data_bcc2, data_bcc2_size);
-  (*data_size) = *data_bcc2_size;
-  unsigned char received_bcc2 = data_bcc2[(*data_bcc2_size) - 1];
+
+  readFromFileToArray(sp_fd, &data_bcc2, &data_bcc2_size);
+  byteUnstuffing(&data_bcc2, &data_bcc2_size);
+  (*data_size) = data_bcc2_size;
+  unsigned char received_bcc2 = data_bcc2[(data_bcc2_size) - 1];
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
   unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));

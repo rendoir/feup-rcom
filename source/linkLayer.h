@@ -52,7 +52,7 @@ void alarmHandler(int);
 * Caller is usued to select the address value.
 * If control field = SET | DISC | UA -> sequence_number should be -1;
 */
-void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, long sequence_number);
+void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number);
 /**
 * Creates an Information Frame.
 * It allocates space for the frame.
@@ -60,7 +60,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
 * frame_size is updated with the new size of the created frame;
 * Returns the new frame size.
 */
-unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, long sequence_number);
+unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number);
 
 /**
 * Does byte stuffing on frame.
