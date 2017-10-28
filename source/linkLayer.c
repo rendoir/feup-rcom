@@ -262,7 +262,8 @@ int llread(int sp_fd, unsigned char **data)
 {
   Frame_Header expected_frame_header;
   unsigned long data_size;
-  unsigned char expected_control_field = (read_sequence_number++) << 6;
+  unsigned char expected_control_field = (read_sequence_number % 2) << 6;
+  read_sequence_number++;
   expected_frame_header.address_field = getAddress(SENDER, expected_control_field);
   readDataFrame(sp_fd, &expected_frame_header, data, &data_size);
   return data_size;
@@ -271,7 +272,7 @@ int llread(int sp_fd, unsigned char **data)
 int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
 {
   unsigned char *frame = NULL;
-  unsigned char expected_control_field = C_RR ^ (write_sequence_number << 7);
+  unsigned char expected_control_field = C_RR ^ (write_sequence_number % 2) << 7;
   unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, write_sequence_number++);
   byteStuffing(&frame, &frame_size);
   return writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
@@ -364,7 +365,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       }
       else if (isData)
       {
-        if (read_char == (expected_frame_header->address_field ^ 0x40))
+        if (read_char == (expected_frame_header->control_field ^ 0x40))
         {
           state = C_REC;
           isDuplicated = 1;
