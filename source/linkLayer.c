@@ -321,11 +321,11 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       state = STOP;
       break;
     }
-    char currentByte = read(sp_fd, &read_char, 1);
-    if (currentByte != 1){
-      perror("Could not read from sp_fd");
+    if(read(sp_fd, &read_char, 1) < 1) {
+      continue;
     }
-    printf("0x%02X ", read_char);
+
+    printf("0x%02X\n", read_char);
     switch (state)
     {
     case START:
