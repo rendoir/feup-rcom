@@ -101,6 +101,7 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
           perror("Error realloc memory for byte stuffing");
         }
       }
+      printf("\nfound flag at %d\n", i);
       insertValueAt(ESCAPE, *frame, i, frame_size);
       i++;
     }

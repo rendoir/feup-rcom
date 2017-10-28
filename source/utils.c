@@ -33,7 +33,7 @@ void logToFile(const char *stringToLog){
 
     char out[80];
     strftime (out, 80, "%Y-%m-%d %H:%M:%S", now_tm);
-  
+
     write(log_file, out, strlen(out));
     write(log_file, " : Mode: ", 9);
     write(log_file, mode, strlen(mode));
