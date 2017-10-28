@@ -152,7 +152,7 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, unsigned char
   //Debug
   printf("\nBuilt control frame:\n");
   for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++)
-	  printf("%d ", frame->frame[i]);
+	  printf("%02X ", frame->frame[i]);
   printf("\n");
 
 }
@@ -182,7 +182,7 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 	//Debug
 	printf("\nBuilt data frame:\n");
 	for (int i = 0; i < 4 + bytes_to_write; i++)
-		printf("%d ", frame->frame[i]);
+		printf("%02X ", frame->frame[i]);
 	printf("\n");
 }
 
@@ -220,12 +220,12 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
 
   //Debug
   printf("\nDisassembled control frame:\n");
-  printf("%d %d %d ", control, t1, l1);
+  printf("%02X %02X %02X ", control, t1, l1);
   for (int i = 0; i < l1; i++)
-  	printf("%d ", v1[i]);
-  printf("%d %d ", t2, l2);
+  	printf("%02X ", v1[i]);
+  printf("%02X %02X ", t2, l2);
   for (int i = 0; i < l2; i++)
-  	printf("%d ", app->file_path[i]);
+  	printf("%02X ", app->file_path[i]);
   printf("\n");
 
   free(v1);
@@ -245,9 +245,9 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
 
   //Debug
   printf("\nDisassembled data frame:\n");
-  printf("%d %d %d %d ", control, serial, l2, l1);
+  printf("%02X %02X %02X %02X ", control, serial, l2, l1);
   for (unsigned long i = 0; i < data_size; i++)
-  	printf("%d ", frame->data[i]);
+  	printf("%02X ", frame->data[i]);
   printf("\n");
 }
 
@@ -277,7 +277,7 @@ void printUsage() {
 void printFileData(ApplicationLayer *app) {
   printf("\nFile data:\n");
   for(int i = 0; i < app->file_size; i++)
-    printf("%d ", app->file_data[i]);
+    printf("%02X ", app->file_data[i]);
   printf("\n");
 }
 
