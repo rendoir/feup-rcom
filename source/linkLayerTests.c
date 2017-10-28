@@ -47,12 +47,13 @@ void testByteStuffing(){
   frame[5+data_size] = FLAG;
 
   byteStuffing(&frame,&frame_size);
-
+  printArray(frame,frame_size);
+  byteUnstuffing(&frame,&frame_size);
   printArray(frame,frame_size);
 
 }
 
 int main(){
   //testByteStuffing();
-  testInsertValueAt();
+  //testInsertValueAt();
 }
