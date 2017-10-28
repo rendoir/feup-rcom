@@ -75,10 +75,10 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   unsigned long i = 0;
   for (i = 0; i < frame_size; i++)
   {
-    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
+    printf("%02X ", (*frame)[i]);
   }
 
-  printf("\nDEBUG: END BUILDDATAFRAME\n");
+  printf("\n\nDEBUG: END BUILDDATAFRAME\n");
   return frame_size;
 }
 
@@ -511,9 +511,6 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   Frame_Header frame_header_expected;
   frame_header_expected.address_field = getAddress((caller ^ 1), expected_control_field); //negate the caller
   frame_header_expected.control_field = expected_control_field;
-
-	for(int i = 0; i < frame_size; i++)
-		printf("0x%02x ", frame_to_write[i]);
 
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
