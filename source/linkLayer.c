@@ -46,7 +46,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
 
-  if (sequence_number == -1)
+  if (sequence_number_local == -1)
   {
     frame[2] = control_field;
   }
