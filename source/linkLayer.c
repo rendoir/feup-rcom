@@ -166,7 +166,10 @@ int llcloseSender(int sp_fd)
     return -1;
   }
   printf("  Sent Disc and Received Disc\n");
-  write(sp_fd, ua, 5);
+  if (write(sp_fd, ua, 5) != 5){
+    printf("Error sending UA\n");
+    return -1;
+  }
   printf("  Sent UA\n");
   printf("\nDEBUG: END LLCLOSE\n");
   return 0;
@@ -250,7 +253,10 @@ int llopenReceiver(int fileDescriptor)
     return -1;
   }
   printf("  READ SET FRAME\n");
-  write(fileDescriptor, ua_frame, 5);
+  if (write(fileDescriptor, ua_frame, 5) != 5){
+    printf("Error sending ua\n");
+    return -1;
+  }
   printf("  SENT UA FRAME\n");
   printf("\nDEBUG: END LLOPENRECEIVER\n");
   return 0;
@@ -268,13 +274,17 @@ int llread(int sp_fd, unsigned char **data)
     unsigned char rr_frame[5];
     printf("Sending RR\n");
     buildControlFrameLINK(rr_frame,RECEIVER,C_RR, sequence_number);
-    write(sp_fd,rr_frame,5);
+    if (write(sp_fd,rr_frame,5) != 5){
+      printf("Error sending rr_frame\n");
+    }
   }
   else if (res == -1){
     unsigned char rej_frame[5];
     printf("Sending REJ\n");
     buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, sequence_number);
-    write(sp_fd,rej_frame,5);
+    if (write(sp_fd,rej_frame,5) != 5){
+      printf("Error sending rej_frame\n");
+    }
   }
   return data_size;
 }
@@ -301,7 +311,9 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
   unsigned char read_char;
   while (1)
   {
-    read(sp_fd, &read_char, 1);
+    if (read(sp_fd, &read_char, 1) < 1){
+      continue;
+    }
     if (read_char == FLAG)
     {
       break;
@@ -524,8 +536,12 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
   {
-    if(write(sp_fd, frame_to_write, frame_size) < frame_size)
+    int res;
+    if( (res = write(sp_fd, frame_to_write, frame_size)) < frame_size){
       printf("\nError writting\n");
+    }
+    printf("Wrote %d bytes\n", res);
+
     alarm(3);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     alarm(0);
