@@ -313,9 +313,9 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   unsigned char received_control;
   int isDuplicated = 0;
   int isReject = 0;
+  flag = 0;
   while (state != STOP && !flag)
   {
-    printf("state = %d, flag=%d\n", state,flag);
     if (state == BCC1_OK && isData)
     {
       state = STOP;
@@ -480,7 +480,6 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
 	for(int i = 0; i < frame_size; i++)
 		printf("%d ", frame_to_write[i]);
 
-  flag = 0;
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
   {
