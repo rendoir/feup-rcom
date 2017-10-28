@@ -201,15 +201,15 @@ int llopen(char *port, int caller)
   if (setNewSettings(fileDescriptor, caller) < 0)
     return -1;
 
-  int returnValue;
-
   if (caller == SENDER)
-    returnValue = llopenSender(fileDescriptor);
+    if(llopenSender(fileDescriptor))
+      return -1;
   else if (caller == RECEIVER)
-    returnValue = llopenReceiver(fileDescriptor);
+    if(llopenReceiver(fileDescriptor))
+      return -1;
 
   printf("\nDEBUG: END LLOPEN\n");
-  return returnValue;
+  return fileDescriptor;
 }
 
 int llopenSender(int fileDescriptor)
@@ -288,6 +288,7 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
 Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
   printf("\nDEBUG: START READ FRAME HEADER\n\n");
+  printf("\nfd: %d\n", sp_fd);
   State state = START;
   unsigned char read_char;
   unsigned char received_address;
