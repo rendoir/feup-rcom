@@ -281,6 +281,8 @@ int llread(int sp_fd, unsigned char **data)
   else if (res == -1){
     unsigned char rej_frame[5];
     printf("Sending REJ\n");
+    free(*data);
+    *data = NULL;
     buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, sequence_number);
     if (write(sp_fd,rej_frame,5) != 5){
       printf("Error sending rej_frame\n");

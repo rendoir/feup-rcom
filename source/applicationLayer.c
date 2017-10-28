@@ -194,7 +194,9 @@ int receive(ApplicationLayer *app) {
   disassembleControlFrame(app, &control_frame);
   while (app->bytes_processed < app->file_size) {
     llread(app->sp_fd, &data_frame.frame);
-    disassembleDataFrame(app, &data_frame);
+    if(data_frame.frame != NULL){
+      disassembleDataFrame(app, &data_frame);
+    }
   }
   llread(app->sp_fd, &control_frame.frame);
   disassembleControlFrame(app, &control_frame);
