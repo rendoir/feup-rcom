@@ -77,12 +77,6 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   {
     printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
   }
-
-  byteStuffing(frame, &frame_size);
-  for (i = 0; i < frame_size; i++)
-  {
-    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
-  }
   printf("\nDEBUG: END BUILDDATAFRAME\n");
   return frame_size;
 }
@@ -267,11 +261,13 @@ int llread(int sp_fd, unsigned char **data)
   if (res == 0){
     sequence_number++;
     unsigned char rr_frame[5];
+    printf("Sending RR\n");
     buildControlFrameLINK(rr_frame,RECEIVER,C_RR, sequence_number);
     write(sp_fd,rr_frame,5);
   }
   else if (res == -1){
     unsigned char rej_frame[5];
+    printf("Sending REJ\n");
     buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, sequence_number);
     write(sp_fd,rej_frame,5);
   }
@@ -478,7 +474,7 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
 
   readFromFileToArray(sp_fd, &data_bcc2, &data_bcc2_size);
   byteUnstuffing(&data_bcc2, &data_bcc2_size);
-  (*data_size) = data_bcc2_size;
+  (*data_size) = data_bcc2_size - 1;
   unsigned char received_bcc2 = data_bcc2[(data_bcc2_size) - 1];
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
@@ -490,6 +486,8 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   }
   else
   {
+    printf("Calculated bcc2=0x%02X\n",calculated_bcc2);
+    printf("Received_bcc2=0x%02X\n",received_bcc2);
     // Error in BCC2 -> should trigger a C_REJ
     return -1;
   }
