@@ -41,7 +41,7 @@ unsigned char getBCC(unsigned char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number)
+void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number_local)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
@@ -52,14 +52,14 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
   }
   else
   {
-    frame[2] = ((sequence_number % 2) << 7) | control_field;
+    frame[2] = ((sequence_number_local % 2) << 7) | control_field;
   }
 
   frame[3] = frame[1] ^ frame[2];
   frame[4] = FLAG;
 }
 
-unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number)
+unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number_local)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
   printf("Data_size=%d\n",data_size);
@@ -67,7 +67,7 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   (*frame) = (unsigned char *)malloc(frame_size * sizeof(char));
   (*frame)[0] = FLAG;
   (*frame)[1] = A_SENDER_COMMAND;
-  (*frame)[2] = (unsigned char)((sequence_number) % 2) << 6;
+  (*frame)[2] = (unsigned char)((sequence_number_local) % 2) << 6;
   (*frame)[3] = (*frame)[1] ^ (*frame)[2];
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
@@ -540,7 +540,7 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     //}
     printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
   }
-  if (currentTries >= MAX_TRIES)
+  if (currentTries > MAX_TRIES)
   {
     printf("\nMAX TRIES REACHED\n");
     return -1;
