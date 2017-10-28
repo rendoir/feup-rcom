@@ -62,6 +62,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
 unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
+  printf("Data_size=%d\n",data_size);
   unsigned long frame_size = data_size + 6;
   (*frame) = (unsigned char *)malloc(frame_size * sizeof(char));
   (*frame)[0] = FLAG;

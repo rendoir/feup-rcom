@@ -83,7 +83,7 @@ int closeConnection(ApplicationLayer *app) {
 //Sender
 int readFileData(ApplicationLayer *app) {
   FILE *file_ptr;
-  long long file_length;
+  unsigned long file_length;
 
   file_ptr = fopen(app->file_path, "rb");
   if(file_ptr == NULL){
@@ -94,12 +94,11 @@ int readFileData(ApplicationLayer *app) {
   fseek(file_ptr, 0, SEEK_END);
   file_length = ftell(file_ptr);
   rewind(file_ptr);
-
-  app->file_data = malloc((file_length + 1));
+  printf("File length = %lu\n",file_length);
+  app->file_data = malloc(file_length);
   fread(app->file_data, file_length, 1, file_ptr);
   fclose(file_ptr);
-  app->file_data[file_length] = '\0';
-  app->file_size = file_length + 1;
+  app->file_size = file_length;
 
   return 0;
 }
@@ -112,7 +111,7 @@ int send(ApplicationLayer *app){
     exit(1);
   while (app->bytes_processed < app->file_size) {
 	  buildDataFrame(app, &data_frame);
-    if(llwrite(app->sp_fd, data_frame.frame, control_frame.frame_size) < 0)
+    if(llwrite(app->sp_fd, data_frame.frame, data_frame.frame_size) < 0)
       exit(1);
   }
   buildEndFrame(app, &control_frame);
