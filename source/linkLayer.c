@@ -2,8 +2,7 @@
 
 int flag = 0;
 
-static char write_sequence_number = 0;
-static char read_sequence_number = 0;
+static unsigned long sequence_number = 0;
 
 void alarmHandler(int time)
 {
@@ -53,7 +52,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
   }
   else
   {
-    frame[2] = ((sequence_number % 2) << 7) + control_field;
+    frame[2] = ((sequence_number % 2) << 7) | control_field;
   }
 
   frame[3] = frame[1] ^ frame[2];
@@ -262,18 +261,18 @@ int llread(int sp_fd, unsigned char **data)
 {
   Frame_Header expected_frame_header;
   unsigned long data_size;
-  expected_frame_header.control_field = (read_sequence_number % 2) << 6;
+  expected_frame_header.control_field = (sequence_number % 2) << 6;
   expected_frame_header.address_field = getAddress(SENDER, expected_frame_header.control_field);
   int res = readDataFrame(sp_fd, &expected_frame_header, data, &data_size);
-  read_sequence_number++;
   if (res == 0){
+    sequence_number++;
     unsigned char rr_frame[5];
-    buildControlFrameLINK(rr_frame,RECEIVER,C_RR, read_sequence_number);
+    buildControlFrameLINK(rr_frame,RECEIVER,C_RR, sequence_number);
     write(sp_fd,rr_frame,5);
   }
   else if (res == -1){
     unsigned char rej_frame[5];
-    buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, read_sequence_number);
+    buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, sequence_number);
     write(sp_fd,rej_frame,5);
   }
   return data_size;
@@ -282,9 +281,9 @@ int llread(int sp_fd, unsigned char **data)
 int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
 {
   unsigned char *frame = NULL;
-  unsigned char expected_control_field = C_RR ^ ((write_sequence_number + 1) % 2) << 7;
-  unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, write_sequence_number);
-  write_sequence_number++;
+  unsigned char expected_control_field = C_RR ^ ((sequence_number + 1) % 2) << 7;
+  unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, sequence_number);
+  sequence_number++;
   byteStuffing(&frame, &frame_size);
   return writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
 }
@@ -293,14 +292,12 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
 {
   printf("\nDEBUG: START READ FROM FILE TO ARRAY\n");
   (*data_size) = 0;
-  printf("debug");
   unsigned long frame_allocated_space = 1;
   (*data) = malloc(frame_allocated_space * sizeof(unsigned char));
   unsigned char read_char;
   while (1)
   {
     read(sp_fd, &read_char, 1);
-    printf("0x%02X\n",read_char);
     if (read_char == FLAG)
     {
       break;

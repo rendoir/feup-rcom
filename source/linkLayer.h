@@ -21,8 +21,8 @@ typedef struct
 
 typedef struct
 {
-	char address_field;
-	char control_field;
+	unsigned char address_field;
+	unsigned char control_field;
 } Frame_Header;
 
 typedef enum {
