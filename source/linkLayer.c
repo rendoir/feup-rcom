@@ -540,7 +540,7 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     //}
     printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
   }
-  if (currentTries >= MAX_TRIES)
+  if (currentTries > MAX_TRIES)
   {
     printf("\nMAX TRIES REACHED\n");
     return -1;
