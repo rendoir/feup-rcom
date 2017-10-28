@@ -391,12 +391,12 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
           isDuplicated = 1;
         }
       }
-      else if (read_char == (C_REJ + (R << 7)))
+      else if (read_char == (C_REJ + (notR << 7)))
       {
         state = C_REC;
         isReject = 1;
       }
-      else if (read_char == (C_REJ + (notR << 7)))
+      else if (read_char == (C_REJ + (R << 7)))
       {
         state = C_REC;
         isDuplicated = 1;
@@ -450,19 +450,23 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
   }
   logToFile("readFrameHeader : End ");
-  printf("\n\nDEBUG: END READ FRAME HEADER\n");
+
   if (isDuplicated)
   {
+    printf("\n\nDEBUG: DUPLICATED\n");
     return DUPLICATED;
   }
   if (isReject)
   {
+    printf("\n\nDEBUG: REJECTED\n");
     return REJECTED;
   }
   if (state != STOP)
   {
+    printf("\n\nDEBUG: STATE != STOP\n");
     return ERROR;
   }
+  printf("\n\nDEBUG: END READ FRAME HEADER\n");
   return OK;
 }
 
