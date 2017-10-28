@@ -120,7 +120,7 @@ int send(ApplicationLayer *app){
   return 0;
 }
 
-void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control) {
+void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, unsigned char control) {
   frame->file_size = app->file_size;
   frame->file_name = app->file_path;
   int size_of_file_size = sizeof(frame->file_size) + 1;
@@ -158,15 +158,15 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control)
 }
 
 void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
-	char control = CONTROL_DATA;
-	char serial = serial_number++ % 255;
+	unsigned char control = CONTROL_DATA;
+	unsigned char serial = serial_number++ % 255;
 	long long bytes_left = app->file_size - app->bytes_processed;
 	long long bytes_to_write;
 	if (bytes_left < app->bytes_per_data_packet)
 		bytes_to_write = bytes_left;
 	else bytes_to_write = app->bytes_per_data_packet;
-	char l2 = bytes_to_write / 256;
-	char l1 = bytes_to_write % 256;
+	unsigned char l2 = bytes_to_write / 256;
+	unsigned char l1 = bytes_to_write % 256;
 	frame->data = malloc(bytes_to_write);
 	for (int i = 0; i < bytes_to_write; i++)
 		frame->data[i] = app->file_data[app->bytes_processed++];
@@ -202,15 +202,15 @@ int receive(ApplicationLayer *app) {
 }
 
 void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
-  char control = frame->frame[0];
-  char t1 = frame->frame[1];
-  char l1 = frame->frame[2];
+  unsigned char control = frame->frame[0];
+  unsigned char t1 = frame->frame[1];
+  unsigned char l1 = frame->frame[2];
   char* v1 = malloc(l1);
   for(int i = 0; i < l1; i++)
     v1[i] = frame->frame[i + 3];
   app->file_size = atoll(v1);
-  char t2 = frame->frame[3 + l1];
-  char l2 = frame->frame[4 + l1];
+  unsigned char t2 = frame->frame[3 + l1];
+  unsigned char l2 = frame->frame[4 + l1];
   app->file_path = malloc(l2);
   for(int i = 0; i < l2; i++)
     app->file_path[i] = frame->frame[i + 5 + l1];
@@ -232,8 +232,8 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
 }
 
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
-  char control = frame->frame[0];
-  char serial = frame->frame[1];
+  unsigned char control = frame->frame[0];
+  unsigned char serial = frame->frame[1];
   unsigned char l2 = frame->frame[2];
   unsigned char l1 = frame->frame[3];
   unsigned long data_size = l2 * 256 + l1;

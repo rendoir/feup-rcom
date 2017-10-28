@@ -55,7 +55,7 @@ int closeConnection(ApplicationLayer *app);
 //Sender
 int readFileData(ApplicationLayer *app);
 int send(ApplicationLayer *app);
-void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, char control);
+void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, unsigned char control);
 void buildStartFrame(ApplicationLayer *app, ControlFrame *frame) { buildControlFrame(app, frame, CONTROL_START); }
 void buildEndFrame(ApplicationLayer *app, ControlFrame *frame) { buildControlFrame(app, frame, CONTROL_END); }
 void buildDataFrame(ApplicationLayer *app, DataFrame *frame);
