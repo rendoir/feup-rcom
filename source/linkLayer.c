@@ -488,7 +488,12 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
   unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
-  printf("\nDEBUG: END READ DATA FRAME\n");
+  unsigned i;
+  for(i = 0; i < (*data_size); i++){
+    printf("0x%02X ", (*data_unstuffed)[i]);
+  }
+
+  printf("\n\nDEBUG: END READ DATA FRAME\n");
   if (calculated_bcc2 == received_bcc2)
   {
     return 0;

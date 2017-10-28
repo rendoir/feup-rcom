@@ -234,11 +234,11 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   char control = frame->frame[0];
   char serial = frame->frame[1];
-  char l2 = frame->frame[2];
-  char l1 = frame->frame[3];
-  char data_size = l2 * 256 + l1;
+  unsigned char l2 = frame->frame[2];
+  unsigned char l1 = frame->frame[3];
+  unsigned long data_size = l2 * 256 + l1;
   frame->data = malloc(data_size);
-  for(int i = 0; i < data_size; i++){
+  for(unsigned long i = 0; i < data_size; i++){
     frame->data[i] = frame->frame[i + 4];
     app->file_data[app->bytes_processed++] = frame->data[i];
   }
@@ -246,7 +246,7 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
   //Debug
   printf("\nDisassembled data frame:\n");
   printf("%d %d %d %d ", control, serial, l2, l1);
-  for (int i = 0; i < data_size; i++)
+  for (unsigned long i = 0; i < data_size; i++)
   	printf("%d ", frame->data[i]);
   printf("\n");
 }
