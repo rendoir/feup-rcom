@@ -5,6 +5,12 @@ int flag = 0;
 static char write_sequence_number = 0;
 static char read_sequence_number = 0;
 
+void alarmHandler(int time)
+{
+  printf("Alarm Interrupt\n");
+  flag = 1;
+}
+
 unsigned char getAddress(int caller, unsigned char control_field)
 {
   logToFile("GETADRESS: Start");
@@ -195,11 +201,12 @@ int llopen(char *port, int caller)
 {
   printf("\nDEBUG: START LLOPEN\n");
   int fileDescriptor = openSerialPort(port, caller);
-  if (fileDescriptor < 0)
+  if (fileDescriptor < 0){
     return -1;
-
-  if (setNewSettings(fileDescriptor, caller) < 0)
+  }
+  if (setNewSettings(fileDescriptor, caller) < 0){
     return -1;
+  }
 
   if(setNewAlarmHandler(alarmHandler))
     return -1;
@@ -221,7 +228,11 @@ int llopenSender(int fileDescriptor)
   printf("\nDEBUG: START LLOPENSENDER\n");
   unsigned char set_frame[5];
   buildControlFrameLINK(set_frame, SENDER, C_SET, -1);
-  writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER);
+  if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) != 0){
+    perror("Can't establish connection");
+    logToFile("Error in llopenSender");
+    return -1;
+  }
   printf("  READ ACKNOWLEDGE\n");
   printf("\nDEBUG: END LLOPENSENDER\n");
   return 0;
@@ -235,7 +246,11 @@ int llopenReceiver(int fileDescriptor)
   Frame_Header expected_frame;
   expected_frame.address_field = getAddress(SENDER, C_SET);
   expected_frame.control_field = C_SET;
-  readFrameHeader(fileDescriptor, &expected_frame, 0);
+  if (readFrameHeader(fileDescriptor, &expected_frame, 0) != OK){
+    perror("Couldn't receive SET");
+    logToFile("Error in llopenReceiver");
+    return -1;
+  }
   printf("  READ SET FRAME\n");
   write(fileDescriptor, ua_frame, 5);
   printf("  SENT UA FRAME\n");
@@ -300,6 +315,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   int isReject = 0;
   while (state != STOP && !flag)
   {
+    printf("state = %d, flag=%d\n", state,flag);
     if (state == BCC1_OK && isData)
     {
       state = STOP;
@@ -422,10 +438,10 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
 int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
 {
   printf("\nDEBUG: START READ DATA FRAME\n");
-  int returnValue = readFrameHeader(sp_fd, frame_header, 1);
+  Reply_Status returnValue = readFrameHeader(sp_fd, frame_header, 1);
   unsigned char *data_bcc2;
   unsigned long *data_bcc2_size = NULL;
-  if (returnValue == 1)
+  if (returnValue == DUPLICATED)
   {
     // If frame duplicated without errors.
     // Should trigger a receiver ready.
@@ -451,11 +467,7 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   }
 }
 
-void alarmHandler(int time)
-{
-  printf("Alarm Interrupt %d\n", time);
-  flag = 1;
-}
+
 
 int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
 {
@@ -478,8 +490,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     if (return_value != REJECTED && return_value != ERROR)
     {
-      currentTries = MAX_TRIES;
       alarm(0);
+      break;
     }
     printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
   }

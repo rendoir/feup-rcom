@@ -63,7 +63,7 @@ void run(ApplicationLayer *app){
   logToFile("     CLOSECONNECTION: Start");
   if(closeConnection(app) < 0){
     logToFile("     CLOSECONNECTION: Exit with error");
-    exit(1);  
+    exit(1);
   }
   logToFile("     CLOSECONNECTION: End");
   logToFile("   RUN: End");
