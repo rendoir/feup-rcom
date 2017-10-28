@@ -313,23 +313,26 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   unsigned char received_control;
   int isDuplicated = 0;
   int isReject = 0;
+  flag = 0;
   while (state != STOP && !flag)
   {
-    printf("state = %d, flag=%d\n", state,flag);
     if (state == BCC1_OK && isData)
     {
       logToFile("readFrameHeader : State - BBC1_OK with data");
       state = STOP;
       break;
     }
-    char currentByte = read(sp_fd, &read_char, 1);
-    printf("0x%02X ", currentByte);
+    if(read(sp_fd, &read_char, 1) < 1) {
+      continue;
+    }
+
+    printf("0x%02X\n", read_char);
     switch (state)
     {
     case START:
     {
       logToFile("readFrameHeader : State - START");
-      if (currentByte == FLAG)
+      if (read_char == FLAG)
       {
         state = FLAG_REC;
       }
@@ -338,12 +341,12 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     case FLAG_REC:
     {
       logToFile("readFrameHeader : State - FLAG_REC");
-      received_address = currentByte;
-      if (currentByte == expected_frame_header->address_field)
+      received_address = read_char;
+      if (read_char == expected_frame_header->address_field)
       {
         state = A_REC;
       }
-      else if (currentByte != FLAG)
+      else if (read_char != FLAG)
       {
         state = START;
       }
@@ -352,33 +355,33 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     case A_REC:
     {
       logToFile("readFrameHeader : State - A_REC");
-      received_control = currentByte;
-      char R = currentByte >> 7;
+      received_control = read_char;
+      char R = read_char >> 7;
       char notR = R ^ 1;
-      if (currentByte == expected_frame_header->control_field)
+      if (read_char == expected_frame_header->control_field)
       {
         state = C_REC;
       }
       else if (isData)
       {
-        if (currentByte == (expected_frame_header->address_field ^ 0x40))
+        if (read_char == (expected_frame_header->address_field ^ 0x40))
         {
           state = C_REC;
           isDuplicated = 1;
         }
       }
-      else if (currentByte == (C_REJ + (R << 7)))
+      else if (read_char == (C_REJ + (R << 7)))
       {
         state = C_REC;
         isReject = 1;
       }
-      else if (currentByte == (C_REJ + (notR << 7)))
+      else if (read_char == (C_REJ + (notR << 7)))
       {
         state = C_REC;
         isDuplicated = 1;
         isReject = 1;
       }
-      else if (currentByte == FLAG)
+      else if (read_char == FLAG)
       {
         state = FLAG_REC;
       }
@@ -391,11 +394,11 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     case C_REC:
     {
       logToFile("readFrameHeader : State - C_REC");
-      if (currentByte == (received_address ^ received_control))
+      if (read_char == (received_address ^ received_control))
       {
         state = BCC1_OK;
       }
-      else if (currentByte == FLAG)
+      else if (read_char == FLAG)
       {
         state = FLAG_REC;
       }
@@ -408,7 +411,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     case BCC1_OK:
     {
       logToFile("readFrameHeader : State - BCC1_OK not data");
-      if (currentByte == FLAG)
+      if (read_char == FLAG)
       {
         state = STOP;
       }
@@ -487,7 +490,6 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
 	for(int i = 0; i < frame_size; i++)
 		printf("%d ", frame_to_write[i]);
 
-  flag = 0;
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
   {
