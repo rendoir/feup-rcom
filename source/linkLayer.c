@@ -84,7 +84,7 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
 
 void byteStuffing(unsigned char **frame, unsigned long *frame_size)
 {
-  printf("\nDEBUG: START BYTESTUFFING\n");
+  //printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
   int allocated_space = *frame_size;
   for (i = 4; i < *frame_size - 1; i++)
@@ -102,12 +102,12 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
           perror("Error realloc memory for byte stuffing");
         }
       }
-      printf("\nfound flag at %d\n", i);
+      //printf("found flag at %d\n", i);
       insertValueAt(ESCAPE, *frame, i, frame_size);
       i++;
     }
   }
-  printf("\nDEBUG: END BYTESTUFFING\n");
+  //printf("\nDEBUG: END BYTESTUFFING\n");
 }
 
 void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
@@ -515,7 +515,7 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
 
 int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
 {
-  printf("\nDEBUG: START WRITEANDREADREPLY\n");
+  printf("\nDEBUG: START WRITE AND READ REPLY\n");
 
   Frame_Header frame_header_expected;
   frame_header_expected.address_field = getAddress((caller ^ 1), expected_control_field); //negate the caller
@@ -531,20 +531,18 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     alarm(0);
     if (return_value == OK || return_value == DUPLICATED)
     {
-      printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
       logToFile("writeAndReadReply : success");
       break;
     }
-    //else if(return_value == REJECTED){
-    //  currentTries = 0;
-    //}
-    printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
+    if(return_value == REJECTED){
+      currentTries = 0;
+    }
   }
   if (currentTries > MAX_TRIES)
   {
     printf("\nMAX TRIES REACHED\n");
     return -1;
   }
-  printf("\nDEBUG: END WRITEANDREADREPLY\n");
+  printf("\nDEBUG: END WRITE AND READ REPLY\n");
   return 0;
 }
