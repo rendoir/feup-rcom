@@ -389,8 +389,6 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     {
       logToFile("readFrameHeader : State - A_REC");
       received_control = read_char;
-      char R = read_char >> 7;
-      char notR = R ^ 1;
       if (read_char == expected_frame_header->control_field)
       {
         state = C_REC;
@@ -403,15 +401,9 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
           isDuplicated = 1;
         }
       }
-      else if (read_char == (C_REJ | (notR << 7)))
+      else if (read_char & C_REJ)
       {
         state = C_REC;
-        isReject = 1;
-      }
-      else if (read_char == (C_REJ | (R << 7)))
-      {
-        state = C_REC;
-        isDuplicated = 1;
         isReject = 1;
       }
       else if (read_char == (C_RR | (expected_frame_header->control_field ^ 0x80))){
@@ -466,6 +458,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
   }
   logToFile("readFrameHeader : End ");
+
 
   if (isDuplicated)
   {
