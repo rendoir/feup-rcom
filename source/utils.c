@@ -3,7 +3,7 @@
 void insertValueAt(unsigned char value, unsigned char *array, int index, unsigned long *array_size)
 {
   int i;
-  for (i = (*array_size) - 1; i > index; i--)
+  for (i = (*array_size) - 1; i > index -1; i--)
   {
     array[i + 1] = array[i];
   }

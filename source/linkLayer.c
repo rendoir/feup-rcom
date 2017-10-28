@@ -70,13 +70,13 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   unsigned long i = 0;
   for (i = 0; i < frame_size; i++)
   {
-    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, *frame[i]);
+    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
   }
 
   byteStuffing(frame, &frame_size);
   for (i = 0; i < frame_size; i++)
   {
-    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, *frame[i]);
+    printf("DEBUG: Data Frame[%lu] == 0x%02X\n", i, (*frame)[i]);
   }
   printf("\nDEBUG: END BUILDDATAFRAME\n");
   return frame_size;
@@ -95,7 +95,7 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
       (*frame)[i] = currentByte ^ STUFF_XOR;
       if (allocated_space <= *frame_size)
       {
-        allocated_space = 2 * allocated_space;
+        allocated_space++;
         if (realloc(*frame, allocated_space * sizeof(unsigned char)) == NULL)
         {
           perror("Error realloc memory for byte stuffing");

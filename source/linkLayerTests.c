@@ -2,16 +2,28 @@
 #include <stdio.h>
 #include "linkLayer.h"
 
-
-
+void printArray(unsigned char* array, unsigned long size){
+  int i;
+  for (i = 0; i < size; i++){
+    printf("Array at %d = 0x%02X\n",i,array[i]);
+  }
+}
 
 void testInsertValueAt(){
+  unsigned long data_size = 8;
+  unsigned char *data = "ola~ana";
   unsigned char* frame;
-  unsigned long frame_size;
+  unsigned long frame_size = buildDataFrameLINK(&frame,data,data_size,0);
+  printf("Data Frame \n");
+  printArray(frame,frame_size);
+  printf("\nInsert value 0x00 at index 4");
+  insertValueAt(0,frame,4,&frame_size);
+  printf("After Insert\n");
+  printArray(frame,frame_size);
 }
 
 void testByteStuffing(){
-  const char *data = "ola~maria";
+  const char *data = "ola~ana";
   unsigned long data_size = strlen(data);
   unsigned char bcc2 = 0;
   unsigned char address_field = A_SENDER_COMMAND;
@@ -36,13 +48,11 @@ void testByteStuffing(){
 
   byteStuffing(&frame,&frame_size);
 
-  int frame_index;
-  for (frame_index = 0; frame_index < frame_size; frame_index++){
-    printf("Frame at %d = 0x%02X\n", frame_index,frame[frame_index]);
-  }
+  printArray(frame,frame_size);
 
 }
 
 int main(){
-  testByteStuffing();
+  //testByteStuffing();
+  testInsertValueAt();
 }
