@@ -35,16 +35,16 @@ typedef enum {
 } State;
 
 typedef enum {
-	OK,
-	DUPLICATED,
-	REJECTED,
-	ERROR
+	OK = 0,
+	DUPLICATED = 1,
+	REJECTED = 2,
+	ERROR = 3
 } Reply_Status;
 
 /**
 * Alarm Handler
 */
-int alarm_handler(int);
+void alarmHandler(int);
 
 /**
 * Builds a control packet and returns it on the frame parameter.
