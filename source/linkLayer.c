@@ -461,6 +461,9 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   frame_header_expected.address_field = getAddress((caller ^ 1), expected_control_field); //negate the caller
   frame_header_expected.control_field = expected_control_field;
 
+	for(int i = 0; i < frame_size; i++)
+		printf("%d ", frame_to_write[i]);
+
   flag = 0;
   unsigned int currentTries = 0;
   while (currentTries++ < MAX_TRIES)
