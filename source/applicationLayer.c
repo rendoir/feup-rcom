@@ -271,7 +271,7 @@ void printUsage() {
 }
 
 void printFileData(ApplicationLayer *app) {
-  printf("\nFile data sent:\n");
+  printf("\nFile data:\n");
   for(int i = 0; i < app->file_size; i++)
     printf("%d ", app->file_data[i]);
   printf("\n");
