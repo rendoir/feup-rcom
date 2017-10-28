@@ -95,8 +95,9 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
       (*frame)[i] = currentByte ^ STUFF_XOR;
       if (allocated_space <= *frame_size)
       {
-        allocated_space++;
-        if (realloc(*frame, allocated_space * sizeof(unsigned char)) == NULL)
+        allocated_space *= 2;
+        *frame = realloc(*frame, allocated_space * sizeof(unsigned char));
+        if ((*frame) == NULL)
         {
           perror("Error realloc memory for byte stuffing");
         }
@@ -126,7 +127,8 @@ void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
     }
   }
   // Realloc to free unused memory
-  if (realloc(*frame, *frame_size * sizeof(char)) == NULL)
+  *frame = realloc(*frame, *frame_size * sizeof(char));
+  if ((*frame) == NULL)
   {
     perror("Error reallocating memory for byte unstuffing");
   }
@@ -306,8 +308,9 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
     }
     if ((*data_size) >= frame_allocated_space)
     {
-      frame_allocated_space++;
-      if (realloc((*data), frame_allocated_space) == NULL)
+      frame_allocated_space *= 2;
+      *data = realloc((*data), frame_allocated_space);
+      if ((*data) == NULL)
       {
         perror("Error realloc memory for read data frame");
         return -1;
