@@ -414,7 +414,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
         isDuplicated = 1;
         isReject = 1;
       }
-      else if (read_char == C_RR | (expected_frame_header->control_field ^ 0x80)){
+      else if (read_char == (C_RR | (expected_frame_header->control_field ^ 0x80))){
         isDuplicated = 1;
         state = C_REC;
       }
