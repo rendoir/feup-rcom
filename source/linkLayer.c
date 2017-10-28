@@ -298,6 +298,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   {
     if (state == BCC1_OK && isData)
     {
+      logToFile("readFrameHeader : State - BBC1_OK with data");
       state = STOP;
       break;
     }
@@ -307,6 +308,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     {
     case START:
     {
+      logToFile("readFrameHeader : State - START");
       if (currentByte == FLAG)
       {
         state = FLAG_REC;
@@ -315,6 +317,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     case FLAG_REC:
     {
+      logToFile("readFrameHeader : State - FLAG_REC");
       received_address = currentByte;
       if (currentByte == expected_frame_header->address_field)
       {
@@ -328,6 +331,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     case A_REC:
     {
+      logToFile("readFrameHeader : State - A_REC");
       received_control = currentByte;
       char R = currentByte >> 7;
       char notR = R ^ 1;
@@ -366,6 +370,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     case C_REC:
     {
+      logToFile("readFrameHeader : State - C_REC");
       if (currentByte == (received_address ^ received_control))
       {
         state = BCC1_OK;
@@ -382,6 +387,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     case BCC1_OK:
     {
+      logToFile("readFrameHeader : State - BCC1_OK not data");
       if (currentByte == FLAG)
       {
         state = STOP;
@@ -399,6 +405,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     }
   }
+  logToFile("readFrameHeader : End ");
   printf("\n\nDEBUG: END READ FRAME HEADER\n");
   if (isDuplicated)
   {
@@ -474,6 +481,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     if (return_value != REJECTED && return_value != ERROR)
     {
+      printf("DEBUG: READFRAMEHEADER RETURN VALUE %d", return_value);
+      logToFile("writeAndReadReply : Max tries");
       currentTries = MAX_TRIES;
       alarm(0);
     }
