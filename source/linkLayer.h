@@ -143,13 +143,13 @@ int llcloseReceiver(int sp_fd);
 * Returns: 0 if no errors detected or if errors detected in bcc2 but duplicated -> should trigger a RR.
 * -1 if error in bcc2 -> should trigger a REJ.
 */
-int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size);
+int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size);
 
 /*
 * State machine that checks frame headers.
 * Returns 0 if frame = expected frame.
 * Returns 1 if frame duplicated with no errors.
-* Returns 2 if it is a C_REJ frame not duplicated.
+* Returns 2 if it is a C_REJ frame.
 * If errors detected, it will not return;
 */
 Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData);
@@ -158,7 +158,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
  * Read data from a file to an array.
  * Returns 0 in case of success, -1 if some error happens with malloc.
  * */
-int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size);
+int readDataToArray(int sp_fd, unsigned char **data, unsigned long *data_size);
 
 /**
  * Writes a frame to sp_fd, waits and reads the reply.

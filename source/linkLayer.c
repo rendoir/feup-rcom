@@ -62,7 +62,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
 unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number_local)
 {
   printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
-  printf("Data_size=%d\n",data_size);
+  printf("Data_size=%d\n", data_size);
   unsigned long frame_size = data_size + 6;
   (*frame) = (unsigned char *)malloc(frame_size * sizeof(char));
   (*frame)[0] = FLAG;
@@ -166,7 +166,8 @@ int llcloseSender(int sp_fd)
     return -1;
   }
   printf("  Sent Disc and Received Disc\n");
-  if (write(sp_fd, ua, 5) != 5){
+  if (write(sp_fd, ua, 5) != 5)
+  {
     printf("Error sending UA\n");
     return -1;
   }
@@ -200,27 +201,34 @@ int llopen(char *port, int caller)
 {
   printf("\nDEBUG: START LLOPEN\n");
   int fileDescriptor = openSerialPort(port, caller);
-  if (fileDescriptor < 0){
+  if (fileDescriptor < 0)
+  {
     return -1;
   }
-  if (setNewSettings(fileDescriptor, caller) < 0){
+  if (setNewSettings(fileDescriptor, caller) < 0)
+  {
     return -1;
   }
 
-  if(setNewAlarmHandler(alarmHandler))
+  if (setNewAlarmHandler(alarmHandler))
     return -1;
 
-  if (caller == SENDER) {
-    if(llopenSender(fileDescriptor) == -1){
+  if (caller == SENDER)
+  {
+    if (llopenSender(fileDescriptor) == -1)
+    {
       return -1;
     }
-  } else if (caller == RECEIVER) {
-    if(llopenReceiver(fileDescriptor) == -1){
+  }
+  else if (caller == RECEIVER)
+  {
+    if (llopenReceiver(fileDescriptor) == -1)
+    {
       return -1;
     }
   }
 
-  printf("\nDEBUG: END LLOPEN, fd=%d\n",fileDescriptor);
+  printf("\nDEBUG: END LLOPEN, fd=%d\n", fileDescriptor);
   return fileDescriptor;
 }
 
@@ -229,7 +237,8 @@ int llopenSender(int fileDescriptor)
   printf("\nDEBUG: START LLOPENSENDER\n");
   unsigned char set_frame[5];
   buildControlFrameLINK(set_frame, SENDER, C_SET, -1);
-  if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) == -1){
+  if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) == -1)
+  {
     perror("Can't establish connection");
     logToFile("Error in llopenSender");
     return -1;
@@ -247,13 +256,15 @@ int llopenReceiver(int fileDescriptor)
   Frame_Header expected_frame;
   expected_frame.address_field = getAddress(SENDER, C_SET);
   expected_frame.control_field = C_SET;
-  if (readFrameHeader(fileDescriptor, &expected_frame, 0) != OK){
+  if (readFrameHeader(fileDescriptor, &expected_frame, 0) != OK)
+  {
     perror("Couldn't receive SET");
     logToFile("Error in llopenReceiver");
     return -1;
   }
   printf("  READ SET FRAME\n");
-  if (write(fileDescriptor, ua_frame, 5) != 5){
+  if (write(fileDescriptor, ua_frame, 5) != 5)
+  {
     printf("Error sending ua\n");
     return -1;
   }
@@ -268,23 +279,27 @@ int llread(int sp_fd, unsigned char **data)
   unsigned long data_size;
   expected_frame_header.control_field = (sequence_number % 2) << 6;
   expected_frame_header.address_field = getAddress(SENDER, expected_frame_header.control_field);
-  int res = readDataFrame(sp_fd, &expected_frame_header, data, &data_size);
-  if (res == 0){
+  int res = readInformationFrame(sp_fd, &expected_frame_header, data, &data_size);
+  if (res == 0)
+  {
     sequence_number++;
     unsigned char rr_frame[5];
     printf("Sending RR\n");
-    buildControlFrameLINK(rr_frame,RECEIVER,C_RR, sequence_number);
-    if (write(sp_fd,rr_frame,5) != 5){
+    buildControlFrameLINK(rr_frame, RECEIVER, C_RR, sequence_number);
+    if (write(sp_fd, rr_frame, 5) != 5)
+    {
       printf("Error sending rr_frame\n");
     }
   }
-  else if (res == -1){
+  else if (res == -1)
+  {
     unsigned char rej_frame[5];
     printf("Sending REJ\n");
     free(*data);
     *data = NULL;
-    buildControlFrameLINK(rej_frame,RECEIVER,C_REJ, sequence_number);
-    if (write(sp_fd,rej_frame,5) != 5){
+    buildControlFrameLINK(rej_frame, RECEIVER, C_REJ, sequence_number);
+    if (write(sp_fd, rej_frame, 5) != 5)
+    {
       printf("Error sending rej_frame\n");
     }
   }
@@ -304,16 +319,17 @@ int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
   return res;
 }
 
-int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
+int readDataToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
 {
-  printf("\nDEBUG: START READ FROM FILE TO ARRAY\n");
+  printf("\nDEBUG: START READ DATA TO ARRAY\n");
   (*data_size) = 0;
   unsigned long frame_allocated_space = 1;
   (*data) = malloc(frame_allocated_space * sizeof(unsigned char));
   unsigned char read_char;
   while (1)
   {
-    if (read(sp_fd, &read_char, 1) < 1){
+    if (read(sp_fd, &read_char, 1) < 1)
+    {
       continue;
     }
     if (read_char == FLAG)
@@ -332,7 +348,7 @@ int readFromFileToArray(int sp_fd, unsigned char **data, unsigned long *data_siz
     }
     (*data)[(*data_size)++] = read_char;
   }
-  printf("\nDEBUG: END READ FROM FILE TO ARRAY\n");
+  printf("\nDEBUG: END READ DATA TO ARRAY\n");
   return 0;
 }
 
@@ -343,8 +359,8 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   unsigned char read_char;
   unsigned char received_address;
   unsigned char received_control;
-  printf("Expected address_field 0x%02X\n",expected_frame_header->address_field);
-  printf("Expected control_field 0x%02X\n",expected_frame_header->control_field);
+  printf("Expected address_field 0x%02X\n", expected_frame_header->address_field);
+  printf("Expected control_field 0x%02X\n", expected_frame_header->control_field);
   int isDuplicated = 0;
   int isReject = 0;
   flag = 0;
@@ -357,7 +373,8 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       state = STOP;
       break;
     }
-    if(read(sp_fd, &read_char, 1) < 1) {
+    if (read(sp_fd, &read_char, 1) < 1)
+    {
       continue;
     }
 
@@ -408,7 +425,8 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
         state = C_REC;
         isReject = 1;
       }
-      else if (read_char == (C_RR | (expected_frame_header->control_field ^ 0x80))){
+      else if (read_char == (C_RR | (expected_frame_header->control_field ^ 0x80)))
+      {
         isDuplicated = 1;
         state = C_REC;
       }
@@ -461,7 +479,6 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   }
   logToFile("readFrameHeader : End ");
 
-
   if (isDuplicated)
   {
     printf("\n\nDEBUG: DUPLICATED\n");
@@ -481,32 +498,32 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   return OK;
 }
 
-int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
+int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
 {
   printf("\nDEBUG: START READ DATA FRAME\n");
   Reply_Status returnValue = readFrameHeader(sp_fd, frame_header, 1);
-  printf("Return value of frame header: %d\n",returnValue);
+  printf("Return value of frame header: %d\n", returnValue);
   unsigned char *data_bcc2 = NULL;
   unsigned long data_bcc2_size;
+  readDataToArray(sp_fd, &data_bcc2, &data_bcc2_size);
   if (returnValue == DUPLICATED)
   {
     // If frame duplicated without errors.
     // Should trigger a receiver ready.
     //flushSP(sp_fd);
-    readFromFileToArray(sp_fd, &data_bcc2, &data_bcc2_size);
+    (*data_unstuffed) = NULL;
     free(data_bcc2);
     return 0;
   }
-
-  readFromFileToArray(sp_fd, &data_bcc2, &data_bcc2_size);
   byteUnstuffing(&data_bcc2, &data_bcc2_size);
   (*data_size) = data_bcc2_size - 1;
-  unsigned char received_bcc2 = data_bcc2[(data_bcc2_size) - 1];
+  unsigned char received_bcc2 = data_bcc2[(data_bcc2_size)-1];
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
   unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
   unsigned i;
-  for(i = 0; i < (*data_size); i++){
+  for (i = 0; i < (*data_size); i++)
+  {
     printf("0x%02X ", (*data_unstuffed)[i]);
   }
 
@@ -517,14 +534,12 @@ int readDataFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_un
   }
   else
   {
-    printf("Calculated bcc2=0x%02X\n",calculated_bcc2);
-    printf("Received_bcc2=0x%02X\n",received_bcc2);
+    printf("Calculated bcc2=0x%02X\n", calculated_bcc2);
+    printf("Received_bcc2=0x%02X\n", received_bcc2);
     // Error in BCC2 -> should trigger a C_REJ
     return -1;
   }
 }
-
-
 
 int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
 {
@@ -538,7 +553,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   while (currentTries++ < MAX_TRIES)
   {
     int res;
-    if( (res = write(sp_fd, frame_to_write, frame_size)) < frame_size){
+    if ((res = write(sp_fd, frame_to_write, frame_size)) < frame_size)
+    {
       printf("\nError writting\n");
     }
     printf("Wrote %d bytes\n", res);
@@ -551,7 +567,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
       logToFile("writeAndReadReply : success");
       break;
     }
-    if(return_value == REJECTED){
+    if (return_value == REJECTED)
+    {
       currentTries = 0;
     }
   }
