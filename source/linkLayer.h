@@ -47,12 +47,12 @@ typedef enum {
 void alarmHandler(int);
 
 /**
-* Builds a control packet and returns it on the frame parameter.
+* Builds a supervison or unnumbered packet and returns it on the frame parameter.
 * Frame memory should be allocated previously.
 * Caller is usued to select the address value.
 * If control field = SET | DISC | UA -> sequence_number should be -1;
 */
-void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number);
+void buildSupervisionFrame(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number);
 /**
 * Creates an Information Frame.
 * It allocates space for the frame.
@@ -60,7 +60,7 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
 * frame_size is updated with the new size of the created frame;
 * Returns the new frame size.
 */
-unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number);
+unsigned long buildInformationFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number);
 
 /**
 * Does byte stuffing on frame.
@@ -137,7 +137,6 @@ int llcloseSender(int sp_fd);
 int llcloseReceiver(int sp_fd);
 
 /*
-* State machine that analysis data frames received.
 * data_struct is filled with the frame read only if no errors detected and not duplicated.
 * does not return if error in bcc1, address or control fields.
 * Returns: 0 if no errors detected or if errors detected in bcc2 but duplicated -> should trigger a RR.

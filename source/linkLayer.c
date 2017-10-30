@@ -41,7 +41,7 @@ unsigned char getBCC(unsigned char *data, int data_size)
   return bcc;
 }
 
-void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number_local)
+void buildSupervisionFrame(unsigned char *frame, int caller, unsigned char control_field, unsigned long sequence_number_local)
 {
   frame[0] = FLAG;
   frame[1] = getAddress(caller, control_field);
@@ -59,10 +59,8 @@ void buildControlFrameLINK(unsigned char *frame, int caller, unsigned char contr
   frame[4] = FLAG;
 }
 
-unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number_local)
+unsigned long buildInformationFrame(unsigned char **frame, unsigned char *data, int data_size, unsigned long sequence_number_local)
 {
-  printf("\nDEBUG: STRAT BUILDDATAFRAME\n");
-  printf("Data_size=%d\n", data_size);
   unsigned long frame_size = data_size + 6;
   (*frame) = (unsigned char *)malloc(frame_size * sizeof(char));
   (*frame)[0] = FLAG;
@@ -73,18 +71,18 @@ unsigned long buildDataFrameLINK(unsigned char **frame, unsigned char *data, int
   (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
   unsigned long i = 0;
+  printf("[Link Layer] Information Frame:\n");
   for (i = 0; i < frame_size; i++)
   {
     printf("%02X ", (*frame)[i]);
   }
+  printf("\n");
 
-  printf("\n\nDEBUG: END BUILDDATAFRAME\n");
   return frame_size;
 }
 
 void byteStuffing(unsigned char **frame, unsigned long *frame_size)
 {
-  //printf("\nDEBUG: START BYTESTUFFING\n");
   int i;
   int allocated_space = *frame_size;
   for (i = 4; i < *frame_size - 1; i++)
@@ -102,17 +100,15 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
           perror("Error realloc memory for byte stuffing");
         }
       }
-      //printf("found flag at %d\n", i);
       insertValueAt(ESCAPE, *frame, i, frame_size);
       i++;
     }
   }
-  //printf("\nDEBUG: END BYTESTUFFING\n");
+  printf("[Link Layer] Finished Byte Stuffing\n");
 }
 
 void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
 {
-  printf("\nDEBUG: START BYTEUNSTUFFING\n");
   int i;
   for (i = 0; i < *frame_size; i++)
   {
@@ -132,12 +128,11 @@ void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
   {
     perror("Error reallocating memory for byte unstuffing");
   }
-  printf("\nDEBUG: END BYTEUNSTUFFING\n");
+  printf("[Link Layer] Finished Byte Unstuffing\n");
 }
 
 int llclose(int sp_fd, int caller)
 {
-  printf("\nDEBUG: START LLCLOSE\n");
   if (caller == SENDER)
   {
     return llcloseSender(sp_fd);
@@ -157,22 +152,22 @@ int llcloseSender(int sp_fd)
 {
   unsigned char sender_disc_frame[5];
   unsigned char ua[5];
-  buildControlFrameLINK(sender_disc_frame, SENDER, C_DISC, -1);
-  buildControlFrameLINK(ua, SENDER, C_UA, -1);
+  buildSupervisionFrame(sender_disc_frame, SENDER, C_DISC, -1);
+  buildSupervisionFrame(ua, SENDER, C_UA, -1);
   int returnValue = writeAndReadReply(sp_fd, sender_disc_frame, 5, C_DISC, SENDER);
   if (returnValue < 0)
   {
     perror("Could not close sender. Error reading DISC\n");
     return -1;
   }
-  printf("  Sent Disc and Received Disc\n");
+  printf("Sent Disc and Received Disc\n");
   if (write(sp_fd, ua, 5) != 5)
   {
     printf("Error sending UA\n");
     return -1;
   }
-  printf("  Sent UA\n");
-  printf("\nDEBUG: END LLCLOSE\n");
+  printf("Sent UA\n");
+  printf("Ended connection\n");
   return 0;
 }
 
@@ -180,26 +175,25 @@ int llcloseReceiver(int sp_fd)
 {
   int returnValue;
   unsigned char receiver_disc_frame[5];
-  buildControlFrameLINK(receiver_disc_frame, RECEIVER, C_DISC, -1);
+  buildSupervisionFrame(receiver_disc_frame, RECEIVER, C_DISC, -1);
   Frame_Header expected_frame_header;
   expected_frame_header.address_field = getAddress(SENDER, C_DISC);
   expected_frame_header.control_field = C_DISC;
   readFrameHeader(sp_fd, &expected_frame_header, 0);
-  printf("  Read DISC\n");
+  printf("Read DISC\n");
   returnValue = writeAndReadReply(sp_fd, receiver_disc_frame, 5, C_UA, RECEIVER);
   if (returnValue < 0)
   {
     perror("Could not close receiver. Error reading UA\n");
     return -1;
   }
-  printf("  Sent DISC and Read UA\n");
-  printf("\nDEBUG: END LLCLOSE\n");
+  printf("Sent DISC and Read UA\n");
+  printf("Ended connection\n");
   return 0;
 }
 
 int llopen(char *port, int caller)
 {
-  printf("\nDEBUG: START LLOPEN\n");
   int fileDescriptor = openSerialPort(port, caller);
   if (fileDescriptor < 0)
   {
@@ -227,32 +221,28 @@ int llopen(char *port, int caller)
       return -1;
     }
   }
-
-  printf("\nDEBUG: END LLOPEN, fd=%d\n", fileDescriptor);
   return fileDescriptor;
 }
 
 int llopenSender(int fileDescriptor)
 {
-  printf("\nDEBUG: START LLOPENSENDER\n");
   unsigned char set_frame[5];
-  buildControlFrameLINK(set_frame, SENDER, C_SET, -1);
+  buildSupervisionFrame(set_frame, SENDER, C_SET, -1);
   if (writeAndReadReply(fileDescriptor, set_frame, 5, C_UA, SENDER) == -1)
   {
     perror("Can't establish connection");
     logToFile("Error in llopenSender");
     return -1;
   }
-  printf("  READ ACKNOWLEDGE\n");
-  printf("\nDEBUG: END LLOPENSENDER\n");
+  printf("Read acknowledge\n");
+  printf("Connection opened\n");
   return 0;
 }
 
 int llopenReceiver(int fileDescriptor)
 {
-  printf("\nDEBUG: START LLOPENRECEIVER\n");
   unsigned char ua_frame[5];
-  buildControlFrameLINK(ua_frame, RECEIVER, C_UA, -1);
+  buildSupervisionFrame(ua_frame, RECEIVER, C_UA, -1);
   Frame_Header expected_frame;
   expected_frame.address_field = getAddress(SENDER, C_SET);
   expected_frame.control_field = C_SET;
@@ -262,14 +252,14 @@ int llopenReceiver(int fileDescriptor)
     logToFile("Error in llopenReceiver");
     return -1;
   }
-  printf("  READ SET FRAME\n");
+  printf("Read set frame\n");
   if (write(fileDescriptor, ua_frame, 5) != 5)
   {
     printf("Error sending ua\n");
     return -1;
   }
-  printf("  SENT UA FRAME\n");
-  printf("\nDEBUG: END LLOPENRECEIVER\n");
+  printf("Sent ua frame\n");
+  printf("Connection opened\n");
   return 0;
 }
 
@@ -285,7 +275,7 @@ int llread(int sp_fd, unsigned char **data)
     sequence_number++;
     unsigned char rr_frame[5];
     printf("Sending RR\n");
-    buildControlFrameLINK(rr_frame, RECEIVER, C_RR, sequence_number);
+    buildSupervisionFrame(rr_frame, RECEIVER, C_RR, sequence_number);
     if (write(sp_fd, rr_frame, 5) != 5)
     {
       printf("Error sending rr_frame\n");
@@ -297,7 +287,7 @@ int llread(int sp_fd, unsigned char **data)
     printf("Sending REJ\n");
     free(*data);
     *data = NULL;
-    buildControlFrameLINK(rej_frame, RECEIVER, C_REJ, sequence_number);
+    buildSupervisionFrame(rej_frame, RECEIVER, C_REJ, sequence_number);
     if (write(sp_fd, rej_frame, 5) != 5)
     {
       printf("Error sending rej_frame\n");
@@ -308,20 +298,17 @@ int llread(int sp_fd, unsigned char **data)
 
 int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
 {
-  printf("\nDEBUG: START LLWRITE\n");
   unsigned char *frame = NULL;
   unsigned char expected_control_field = C_RR ^ ((sequence_number + 1) % 2) << 7;
-  unsigned long frame_size = buildDataFrameLINK(&frame, data, data_size, sequence_number);
+  unsigned long frame_size = buildInformationFrame(&frame, data, data_size, sequence_number);
   sequence_number++;
   byteStuffing(&frame, &frame_size);
   int res = writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
-  printf("\nDEBUG: END LLWRITE\n");
   return res;
 }
 
 int readDataToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
 {
-  printf("\nDEBUG: START READ DATA TO ARRAY\n");
   (*data_size) = 0;
   unsigned long frame_allocated_space = 1;
   (*data) = malloc(frame_allocated_space * sizeof(unsigned char));
@@ -348,13 +335,11 @@ int readDataToArray(int sp_fd, unsigned char **data, unsigned long *data_size)
     }
     (*data)[(*data_size)++] = read_char;
   }
-  printf("\nDEBUG: END READ DATA TO ARRAY\n");
   return 0;
 }
 
 Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int isData)
 {
-  printf("\nDEBUG: START READ FRAME HEADER\n\n");
   State state = START;
   unsigned char read_char;
   unsigned char received_address;
@@ -481,28 +466,26 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
 
   if (isDuplicated)
   {
-    printf("\n\nDEBUG: DUPLICATED\n");
+    printf("DUPLICATED\n");
     return DUPLICATED;
   }
   if (isReject)
   {
-    printf("\n\nDEBUG: REJECTED\n");
+    printf("REJECTED\n");
     return REJECTED;
   }
   if (state != STOP)
   {
-    printf("\n\nDEBUG: STATE != STOP\n");
+    printf("STATE != STOP\n");
     return ERROR;
   }
-  printf("\n\nDEBUG: END READ FRAME HEADER\n");
+  printf("OK\n");
   return OK;
 }
 
 int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **data_unstuffed, unsigned long *data_size)
 {
-  printf("\nDEBUG: START READ DATA FRAME\n");
   Reply_Status returnValue = readFrameHeader(sp_fd, frame_header, 1);
-  printf("Return value of frame header: %d\n", returnValue);
   unsigned char *data_bcc2 = NULL;
   unsigned long data_bcc2_size;
   readDataToArray(sp_fd, &data_bcc2, &data_bcc2_size);
@@ -522,12 +505,13 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
   unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
   unsigned i;
+  printf("[Link Layer] Received data:\n");
   for (i = 0; i < (*data_size); i++)
   {
     printf("0x%02X ", (*data_unstuffed)[i]);
   }
+  printf("\n");
 
-  printf("\n\nDEBUG: END READ DATA FRAME\n");
   if (calculated_bcc2 == received_bcc2)
   {
     return 0;
@@ -543,8 +527,6 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
 
 int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long frame_size, unsigned char expected_control_field, int caller)
 {
-  printf("\nDEBUG: START WRITE AND READ REPLY\n");
-
   Frame_Header frame_header_expected;
   frame_header_expected.address_field = getAddress((caller ^ 1), expected_control_field); //negate the caller
   frame_header_expected.control_field = expected_control_field;
@@ -557,8 +539,6 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     {
       printf("\nError writting\n");
     }
-    printf("Wrote %d bytes\n", res);
-
     alarm(3);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     alarm(0);
@@ -574,9 +554,8 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   }
   if (currentTries > MAX_TRIES)
   {
-    printf("\nMAX TRIES REACHED\n");
+    printf("Max tries reached\n");
     return -1;
   }
-  printf("\nDEBUG: END WRITE AND READ REPLY\n");
   return 0;
 }
