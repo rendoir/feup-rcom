@@ -55,11 +55,9 @@ void run(ApplicationLayer *app){
   }
   if(app->mode == SENDER) {
 	  readFileData(app);
-    printFileData(app);
     send(app);
   } else if (app->mode == RECEIVER) {
     receive(app);
-    printFileData(app);
     writeFileData(app);
   }
   logToFile("     CLOSECONNECTION: Start");
@@ -149,12 +147,6 @@ void buildControlFrame(ApplicationLayer *app, ControlFrame *frame, unsigned char
   free(file_name_str);
   frame->frame_size = 5 + size_of_file_size + size_of_file_name;
 
-  //Debug
-  printf("\n[App Layer] Built control frame:\n");
-  for (int i = 0; i < 5 + size_of_file_size + size_of_file_name; i++)
-	  printf("%02X ", frame->frame[i]);
-  printf("\n");
-
 }
 
 void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
@@ -178,12 +170,6 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 	for (int i = 4; i < 4 + bytes_to_write; i++)
 		frame->frame[i] = frame->data[i - 4];
   frame->frame_size = 4 + bytes_to_write;
-
-	//Debug
-	printf("\n[App Layer] Built data frame:\n");
-	for (int i = 0; i < 4 + bytes_to_write; i++)
-		printf("%02X ", frame->frame[i]);
-	printf("\n");
 }
 
 //Receiver
@@ -205,13 +191,13 @@ int receive(ApplicationLayer *app) {
 
 void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
   unsigned char control = frame->frame[0];
-  unsigned char t1 = frame->frame[1];
+  // unsigned char t1 = frame->frame[1];
   unsigned char l1 = frame->frame[2];
   char* v1 = malloc(l1);
   for(int i = 0; i < l1; i++)
     v1[i] = frame->frame[i + 3];
   app->file_size = atoll(v1);
-  unsigned char t2 = frame->frame[3 + l1];
+  // unsigned char t2 = frame->frame[3 + l1];
   unsigned char l2 = frame->frame[4 + l1];
   app->file_path = malloc(l2);
   for(int i = 0; i < l2; i++)
@@ -220,22 +206,12 @@ void disassembleControlFrame(ApplicationLayer *app, ControlFrame *frame) {
   if(control == CONTROL_START)
     app->file_data = malloc(app->file_size);
 
-  //Debug
-  printf("\n[App Layer] Disassembled control frame:\n");
-  printf("%02X %02X %02X ", control, t1, l1);
-  for (int i = 0; i < l1; i++)
-  	printf("%02X ", v1[i]);
-  printf("%02X %02X ", t2, l2);
-  for (int i = 0; i < l2; i++)
-  	printf("%02X ", app->file_path[i]);
-  printf("\n");
-
   free(v1);
 }
 
 void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
-  unsigned char control = frame->frame[0];
-  unsigned char serial = frame->frame[1];
+  //unsigned char control = frame->frame[0];
+  //unsigned char serial = frame->frame[1];
   unsigned char l2 = frame->frame[2];
   unsigned char l1 = frame->frame[3];
   unsigned long data_size = l2 * 256 + l1;
@@ -244,13 +220,6 @@ void disassembleDataFrame(ApplicationLayer *app, DataFrame *frame) {
     frame->data[i] = frame->frame[i + 4];
     app->file_data[app->bytes_processed++] = frame->data[i];
   }
-
-  //Debug
-  printf("\n[App Layer] Disassembled data frame:\n");
-  printf("%02X %02X %02X %02X ", control, serial, l2, l1);
-  for (unsigned long i = 0; i < data_size; i++)
-  	printf("%02X ", frame->data[i]);
-  printf("\n");
 }
 
 int writeFileData(ApplicationLayer *app) {

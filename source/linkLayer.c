@@ -70,14 +70,6 @@ unsigned long buildInformationFrame(unsigned char **frame, unsigned char *data, 
   memcpy(&((*frame)[4]), data, data_size);
   (*frame)[4 + data_size] = getBCC(data, data_size);
   (*frame)[5 + data_size] = FLAG;
-  unsigned long i = 0;
-  printf("[Link Layer] Information Frame:\n");
-  for (i = 0; i < frame_size; i++)
-  {
-    printf("%02X ", (*frame)[i]);
-  }
-  printf("\n");
-
   return frame_size;
 }
 
@@ -104,7 +96,7 @@ void byteStuffing(unsigned char **frame, unsigned long *frame_size)
       i++;
     }
   }
-  printf("[Link Layer] Finished Byte Stuffing\n");
+  //printf("[Link Layer] Finished Byte Stuffing\n");
 }
 
 void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
@@ -269,6 +261,7 @@ int llread(int sp_fd, unsigned char **data)
   unsigned long data_size;
   expected_frame_header.control_field = (sequence_number % 2) << 6;
   expected_frame_header.address_field = getAddress(SENDER, expected_frame_header.control_field);
+  printf("Receiving data packet %lu\n",sequence_number);
   int res = readInformationFrame(sp_fd, &expected_frame_header, data, &data_size);
   if (res == 0)
   {
@@ -301,6 +294,7 @@ int llwrite(int sp_fd, unsigned char *data, unsigned long data_size)
   unsigned char *frame = NULL;
   unsigned char expected_control_field = C_RR ^ ((sequence_number + 1) % 2) << 7;
   unsigned long frame_size = buildInformationFrame(&frame, data, data_size, sequence_number);
+  printf("Sending data packet %lu\n",sequence_number);
   sequence_number++;
   byteStuffing(&frame, &frame_size);
   int res = writeAndReadReply(sp_fd, frame, frame_size, expected_control_field, SENDER);
@@ -344,14 +338,14 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   unsigned char read_char;
   unsigned char received_address;
   unsigned char received_control;
-  printf("Expected address_field 0x%02X\n", expected_frame_header->address_field);
-  printf("Expected control_field 0x%02X\n", expected_frame_header->control_field);
+  //printf("Expected address_field 0x%02X\n", expected_frame_header->address_field);
+  //printf("Expected control_field 0x%02X\n", expected_frame_header->control_field);
   int isDuplicated = 0;
   int isReject = 0;
   flag = 0;
   while (state != STOP && !flag)
   {
-    printf("State = %d\n", state);
+    //printf("State = %d\n", state);
     if (state == BCC1_OK && isData)
     {
       logToFile("readFrameHeader : State - BBC1_OK with data");
@@ -363,7 +357,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       continue;
     }
 
-    printf("0x%02X\n", read_char);
+    //printf("0x%02X\n", read_char);
     switch (state)
     {
     case START:
@@ -463,20 +457,20 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
   }
   logToFile("readFrameHeader : End ");
-
+  printf("Received ");
   if (isDuplicated)
   {
-    printf("DUPLICATED\n");
+    printf("Duplicated\n");
     return DUPLICATED;
   }
   if (isReject)
   {
-    printf("REJECTED\n");
+    printf("Rejected\n");
     return REJECTED;
   }
   if (state != STOP)
   {
-    printf("STATE != STOP\n");
+    printf("Error: State != Stop\n");
     return ERROR;
   }
   printf("OK\n");
@@ -504,13 +498,6 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
   (*data_unstuffed) = malloc((*data_size) * sizeof(unsigned char));
   memcpy((*data_unstuffed), data_bcc2, (*data_size));
   unsigned char calculated_bcc2 = getBCC((*data_unstuffed), (*data_size));
-  unsigned i;
-  printf("[Link Layer] Received data:\n");
-  for (i = 0; i < (*data_size); i++)
-  {
-    printf("0x%02X ", (*data_unstuffed)[i]);
-  }
-  printf("\n");
 
   if (calculated_bcc2 == received_bcc2)
   {
