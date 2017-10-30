@@ -120,7 +120,6 @@ void byteUnstuffing(unsigned char **frame, unsigned long *frame_size)
   {
     perror("Error reallocating memory for byte unstuffing");
   }
-  printf("[Link Layer] Finished Byte Unstuffing\n");
 }
 
 int llclose(int sp_fd, int caller)
@@ -238,6 +237,7 @@ int llopenReceiver(int fileDescriptor)
   Frame_Header expected_frame;
   expected_frame.address_field = getAddress(SENDER, C_SET);
   expected_frame.control_field = C_SET;
+  printf("Waiting for connection...\n");
   if (readFrameHeader(fileDescriptor, &expected_frame, 0) != OK)
   {
     perror("Couldn't receive SET");
