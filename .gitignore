@@ -51,6 +51,10 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
+# App
 source/app
 source/.log
-source/pinguim.gif
+
+# Report
+~$Report.docx
+~WRL0005.tmp

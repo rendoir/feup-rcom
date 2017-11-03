@@ -1,8 +1,0 @@
-Functions:
-  - should be written in camelCase
-Variables:
-  - use underscore, ex : char read_char;
-Constants:
-  - all capital.
-Returns:
-  - 0 if success, -1 if error.
