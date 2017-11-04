@@ -57,4 +57,4 @@ source/.log
 
 # Report
 ~$Report.docx
-~WRL0005.tmp
+*.tmp
