@@ -5,8 +5,8 @@ int flag = 0;
 static unsigned long sequence_number = 0;
 
 // Probabilities defined in percentage. Maximum is 100.
-double header_error_prob = 0.4;
-double data_error_prob = 9.6;
+double header_error_prob = 0.6;
+double data_error_prob = 14.4;
 double t_prop = 0;
 
 
