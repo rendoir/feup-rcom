@@ -285,6 +285,7 @@ int llread(int sp_fd, unsigned char **data)
     printf("Sending REJ\n");
     free(*data);
     *data = NULL;
+    printf("DEBUG: Data is free\n");
     buildSupervisionFrame(rej_frame, RECEIVER, C_REJ, sequence_number);
     if (write(sp_fd, rej_frame, 5) != 5)
     {
