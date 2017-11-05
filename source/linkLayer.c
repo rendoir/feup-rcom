@@ -4,6 +4,11 @@ int flag = 0;
 
 static unsigned long sequence_number = 0;
 
+// Probabilities defined in percentage. Maximum is 100.
+int header_error_prob = 10;
+int data_error_prob = 20;
+
+
 void alarmHandler(int time)
 {
   printf("Alarm Interrupt\n");
@@ -343,6 +348,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   int isDuplicated = 0;
   int isReject = 0;
   flag = 0;
+  int randomNumber = rand() % 100;
   while (state != STOP && !flag)
   {
     //printf("State = %d\n", state);
@@ -424,7 +430,11 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       logToFile("readFrameHeader : State - C_REC");
       if (read_char == (received_address ^ received_control))
       {
-        state = BCC1_OK;
+        if (isData && (randomNumber < header_error_prob)){
+          state = START;
+        }else{
+          state = BCC1_OK;
+        }
       }
       else if (read_char == FLAG)
       {
@@ -456,6 +466,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
     }
     }
   }
+
   logToFile("readFrameHeader : End ");
   printf("Received ");
   if (isDuplicated)
@@ -501,6 +512,10 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
 
   if (calculated_bcc2 == received_bcc2)
   {
+    int randomNumber = rand() % 100;
+    if (randomNumber < data_error_prob){
+      return -1; // Simulate an error in BCC2.
+    }
     return 0;
   }
   else
