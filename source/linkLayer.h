@@ -2,6 +2,7 @@
 #define LINK_LAYER_H
 
 #include <string.h> //used for memcpy
+#include <unistd.h>
 #include "serialPort.h"
 #include "alarm.h"
 #include "macros.h"

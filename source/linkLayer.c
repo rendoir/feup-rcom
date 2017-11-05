@@ -7,6 +7,7 @@ static unsigned long sequence_number = 0;
 // Probabilities defined in percentage. Maximum is 100.
 int header_error_prob = 0;
 int data_error_prob = 0;
+int t_prop = 0;
 
 
 void alarmHandler(int time)
@@ -268,6 +269,7 @@ int llread(int sp_fd, unsigned char **data)
   expected_frame_header.address_field = getAddress(SENDER, expected_frame_header.control_field);
   printf("Receiving data packet %lu\n",sequence_number);
   int res = readInformationFrame(sp_fd, &expected_frame_header, data, &data_size);
+  sleep(t_prop);
   if (res == 0)
   {
     sequence_number++;
@@ -540,11 +542,12 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
   while (currentTries++ < MAX_TRIES)
   {
     int res;
+    sleep(t_prop);
     if ((res = write(sp_fd, frame_to_write, frame_size)) < frame_size)
     {
       printf("\nError writting\n");
     }
-    alarm(1);
+    alarm(ALARM_TIME);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     alarm(0);
     if (return_value == OK || return_value == DUPLICATED)
