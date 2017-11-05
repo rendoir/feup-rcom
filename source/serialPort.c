@@ -26,8 +26,6 @@ int initInputMode(struct termios *new_tio, int caller)
     new_tio->c_cc[VTIME] = 0; /* read time-out */
     new_tio->c_cc[VMIN] = 1;  /* number chars to read (blocking) */
   }
-  cfsetispeed(new_tio,B230400);
-  cfsetospeed(new_tio,B230400);
   return 0;
 }
 
