@@ -1,11 +1,14 @@
 #ifndef UTILS_H
 #define UTILS_H
 
+#include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <string.h>
 #include <time.h>
 #include "macros.h"
+
+double getRandomFloat(const double max);
 
 /**
 * Inserts a value at a given position of the array.

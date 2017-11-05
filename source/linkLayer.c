@@ -5,8 +5,8 @@ int flag = 0;
 static unsigned long sequence_number = 0;
 
 // Probabilities defined in percentage. Maximum is 100.
-int header_error_prob = 0;
-int data_error_prob = 0;
+double header_error_prob = 0;
+double data_error_prob = 0;
 double t_prop = 500*1000;
 
 
@@ -351,7 +351,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
   int isDuplicated = 0;
   int isReject = 0;
   flag = 0;
-  int randomNumber;
+  double randomNumber;
   while (state != STOP && !flag)
   {
     //printf("State = %d\n", state);
@@ -433,7 +433,7 @@ Reply_Status readFrameHeader(int sp_fd, Frame_Header *expected_frame_header, int
       logToFile("readFrameHeader : State - C_REC");
       if (read_char == (received_address ^ received_control))
       {
-        randomNumber = rand() % 100;
+        randomNumber = getRandomFloat(100);
         if (isData && (randomNumber < header_error_prob)){
           state = START;
         }else{
@@ -497,7 +497,7 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
   Reply_Status returnValue = readFrameHeader(sp_fd, frame_header, 1);
   unsigned char *data_bcc2 = NULL;
   unsigned long data_bcc2_size;
-  int randomNumber;
+  double randomNumber;
   readDataToArray(sp_fd, &data_bcc2, &data_bcc2_size);
   if (returnValue == DUPLICATED)
   {
@@ -517,7 +517,7 @@ int readInformationFrame(int sp_fd, Frame_Header *frame_header, unsigned char **
 
   if (calculated_bcc2 == received_bcc2)
   {
-    randomNumber = rand() % 100;
+    randomNumber = getRandomFloat(100);
     if (randomNumber < data_error_prob){
       return -1; // Simulate an error in BCC2.
     }
