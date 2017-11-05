@@ -122,7 +122,7 @@ int send(ApplicationLayer *app){
     exit(1);
   elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
   elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
-  printf("Elapsed Time = %d ms", elapsedTime);
+  printf("Elapsed Time = %d ms\n", elapsedTime);
   return 0;
 }
 
