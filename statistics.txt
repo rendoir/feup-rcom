@@ -1,0 +1,7 @@
+Statistics:
+
+Time (in seconds) to transfer without errors:
+(19.718 + 19.716 + 19.718) / 3 = 19.717s
+L = 73623 bytes;
+R = 73623 / 19.717s = 3734 bytes/second
+Tf = 73623/3734 =

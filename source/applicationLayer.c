@@ -9,6 +9,7 @@ int main(int argc, char* argv[]) {
       mode = argv[2];
     }
   }
+  srand(time(NULL));
   logToFile(" MAIN: Start APP");
   ApplicationLayer app;
   initApp(&app, argc, argv);
@@ -102,19 +103,25 @@ int readFileData(ApplicationLayer *app) {
 }
 
 int send(ApplicationLayer *app){
+  struct timeval t1, t2;
+  double elapsedTime;
   ControlFrame control_frame;
   DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
   if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
     exit(1);
+  gettimeofday(&t1, NULL);
   while (app->bytes_processed < app->file_size) {
 	  buildDataFrame(app, &data_frame);
     if(llwrite(app->sp_fd, data_frame.frame, data_frame.frame_size) < 0)
       exit(1);
   }
+  gettimeofday(&t2,NULL);
   buildEndFrame(app, &control_frame);
   if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
     exit(1);
+  elapsedTime = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000000.0;
+  printf("ElapsedTime = %f seconds\n", elapsedTime);
   return 0;
 }
 
@@ -176,7 +183,10 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 int receive(ApplicationLayer *app) {
   ControlFrame control_frame;
   DataFrame	data_frame;
-  llread(app->sp_fd, &control_frame.frame);
+  control_frame.frame = NULL;
+  while(control_frame.frame == NULL){
+    llread(app->sp_fd, &control_frame.frame);
+  }
   disassembleControlFrame(app, &control_frame);
   while (app->bytes_processed < app->file_size) {
     llread(app->sp_fd, &data_frame.frame);
@@ -184,7 +194,10 @@ int receive(ApplicationLayer *app) {
       disassembleDataFrame(app, &data_frame);
     }
   }
-  llread(app->sp_fd, &control_frame.frame);
+  control_frame.frame = NULL;
+  while(control_frame.frame == NULL){
+    llread(app->sp_fd, &control_frame.frame);
+  }
   disassembleControlFrame(app, &control_frame);
   return 0;
 }
