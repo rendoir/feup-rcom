@@ -108,18 +108,18 @@ int send(ApplicationLayer *app){
   ControlFrame control_frame;
   DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
-  gettimeofday(&t1, NULL);
   if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
     exit(1);
+  gettimeofday(&t1, NULL);
   while (app->bytes_processed < app->file_size) {
 	  buildDataFrame(app, &data_frame);
     if(llwrite(app->sp_fd, data_frame.frame, data_frame.frame_size) < 0)
       exit(1);
   }
+  gettimeofday(&t2,NULL);
   buildEndFrame(app, &control_frame);
   if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
     exit(1);
-  gettimeofday(&t2,NULL);
   elapsedTime = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000000.0;
   printf("ElapsedTime = %f seconds\n", elapsedTime);
   return 0;
