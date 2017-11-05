@@ -121,7 +121,7 @@ int send(ApplicationLayer *app){
     exit(1);
   gettimeofday(&t2,NULL);
   elapsedTime = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000000.0;
-  printf("ElapsedTime = %f seconds", elapsedTime);
+  printf("ElapsedTime = %f seconds\n", elapsedTime);
   return 0;
 }
 

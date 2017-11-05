@@ -543,7 +543,7 @@ int writeAndReadReply(int sp_fd, unsigned char *frame_to_write, unsigned long fr
     {
       printf("\nError writting\n");
     }
-    alarm(3);
+    alarm(1);
     Reply_Status return_value = readFrameHeader(sp_fd, &frame_header_expected, 0); // 0 - CONTROL FRAME
     alarm(0);
     if (return_value == OK || return_value == DUPLICATED)
