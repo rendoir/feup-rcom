@@ -7,7 +7,7 @@ static unsigned long sequence_number = 0;
 // Probabilities defined in percentage. Maximum is 100.
 double header_error_prob = 0;
 double data_error_prob = 0;
-double t_prop = 500*1000;
+double t_prop = 0;
 
 
 void alarmHandler(int time)
