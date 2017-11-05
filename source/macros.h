@@ -26,7 +26,7 @@
 #define SENDER 0
 #define RECEIVER 1
 
-#define BAUDRATE B230400
+#define BAUDRATE B38400
 #define DEFAULT_SERIAL_PATH "/dev/ttyS"
 
 #define MAX_TRIES 3
