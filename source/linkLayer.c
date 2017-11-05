@@ -5,8 +5,8 @@ int flag = 0;
 static unsigned long sequence_number = 0;
 
 // Probabilities defined in percentage. Maximum is 100.
-int header_error_prob = 10;
-int data_error_prob = 20;
+int header_error_prob = 0;
+int data_error_prob = 0;
 
 
 void alarmHandler(int time)
