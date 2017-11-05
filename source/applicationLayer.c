@@ -183,7 +183,10 @@ void buildDataFrame(ApplicationLayer *app, DataFrame *frame) {
 int receive(ApplicationLayer *app) {
   ControlFrame control_frame;
   DataFrame	data_frame;
-  llread(app->sp_fd, &control_frame.frame);
+  control_frame.frame = NULL;
+  while(control_frame.frame == NULL){
+    llread(app->sp_fd, &control_frame.frame);
+  }
   disassembleControlFrame(app, &control_frame);
   while (app->bytes_processed < app->file_size) {
     llread(app->sp_fd, &data_frame.frame);
@@ -191,7 +194,10 @@ int receive(ApplicationLayer *app) {
       disassembleDataFrame(app, &data_frame);
     }
   }
-  llread(app->sp_fd, &control_frame.frame);
+  control_frame.frame = NULL;
+  while(control_frame.frame == NULL){
+    llread(app->sp_fd, &control_frame.frame);
+  }
   disassembleControlFrame(app, &control_frame);
   return 0;
 }
