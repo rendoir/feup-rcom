@@ -104,7 +104,7 @@ int readFileData(ApplicationLayer *app) {
 
 int send(ApplicationLayer *app){
   struct timeval t1, t2;
-  double elapsedTime;
+  int elapsedTime;
   ControlFrame control_frame;
   DataFrame	data_frame;
   buildStartFrame(app, &control_frame);
@@ -120,8 +120,9 @@ int send(ApplicationLayer *app){
   buildEndFrame(app, &control_frame);
   if(llwrite(app->sp_fd, control_frame.frame, control_frame.frame_size) < 0)
     exit(1);
-  elapsedTime = (t2.tv_sec - t1.tv_sec) + (t2.tv_usec - t1.tv_usec)/1000000.0;
-  printf("ElapsedTime = %f seconds\n", elapsedTime);
+  elapsedTime = (t2.tv_sec - t1.tv_sec) * 1000.0;      // sec to ms
+  elapsedTime += (t2.tv_usec - t1.tv_usec) / 1000.0;
+  printf("Elapsed Time = %d ms\n", elapsedTime);
   return 0;
 }
 

@@ -1,7 +1,17 @@
-Statistics:
+Statistics
 
-Time (in seconds) to transfer without errors:
-(19.718 + 19.716 + 19.718) / 3 = 19.717s
-L = 73623 bytes;
-R = 73623 / 19.717s = 3734 bytes/second
-Tf = 73623/3734 =
+Tf = L / BaudRate
+Calcular a = Tprop / Tf
+
+Eficiencia prática S = R/BAUDRATE
+
+Eficiencia teórica sem erros = 1/(1+2a);
+
+Eficiencia teórica com erros = 1/(1-pe);
+
+Gráficos:
+Tempo total por Pe cabecalho com tprop = 0
+Tempo total por Pe dados com tprop = 0
+Tempo total por tamanho pacote (usando baudrate constante)
+Tempo total por baudrates
+Tempo total por tprop (usando Pe = 0).

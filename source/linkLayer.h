@@ -1,7 +1,10 @@
 #ifndef LINK_LAYER_H
 #define LINK_LAYER_H
 
+#define _BSD_SOURCE
+
 #include <string.h> //used for memcpy
+#include <unistd.h>
 #include "serialPort.h"
 #include "alarm.h"
 #include "macros.h"

@@ -1,5 +1,10 @@
 #include "utils.h"
 
+double getRandomFloat(const double max)
+{
+  return max * ((double)rand() / RAND_MAX);
+}
+
 void insertValueAt(unsigned char value, unsigned char *array, int index, unsigned long *array_size)
 {
   int i;
