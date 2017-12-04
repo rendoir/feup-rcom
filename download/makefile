@@ -1,6 +1,6 @@
 CC = gcc
 
-CFLAGS  = -g '-std=c11' -Wall
+CFLAGS  = -Wall
 
 SRCS = FTP.c URL.c Download.c
 

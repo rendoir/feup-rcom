@@ -54,6 +54,7 @@ dkms.conf
 # App
 source/app
 source/.log
+donwload/download
 
 # Report
 ~$Report.docx

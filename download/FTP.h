@@ -5,7 +5,7 @@
 #include <regex.h>
 #include <errno.h>
 #include <unistd.h>
-
+#include <strings.h> //for bzero
 #include <sys/types.h>
 #include <sys/socket.h>
 

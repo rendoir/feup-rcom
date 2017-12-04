@@ -5,8 +5,8 @@
 static void printUsage(char* argv0);
 
 int main(int argc, char** argv) {
-	url url;
-	ftp ftp;
+	URL url;
+	FTP ftp;
 	if (argc != 2) {
 		printUsage(argv[0]);
 		return 1;
