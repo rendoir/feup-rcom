@@ -1,6 +1,6 @@
 #include "URL.h"
 
-void initURL(url* url) {
+void initURL(URL* url) {
 	memset(url->user, 0, sizeof(url_content));
 	memset(url->password, 0, sizeof(url_content));
 	memset(url->host, 0, sizeof(url_content));
@@ -14,7 +14,7 @@ const char* regExpression =
 
 const char* regExprAnony = "ftp://([A-Za-z0-9.~-])+/([[A-Za-z0-9/~._-])+";
 
-int parseURL(url* url, const char* urlStr) {
+int parseURL(URL* url, const char* urlStr) {
 	char* tempURL, *element, *activeExpression;
 	regex_t* regex;
 	size_t nmatch = strlen(urlStr);
@@ -57,24 +57,24 @@ int parseURL(url* url, const char* urlStr) {
 		strcpy(tempURL, tempURL + 1);
 
 		// saving username
-		strcpy(element, processElementUntilChar(tempURL, ':'));
+		strcpy(element, getStringToDelimiter(tempURL, ':'));
 		memcpy(url->user, element, strlen(element));
 
 		//saving password
-		strcpy(element, processElementUntilChar(tempURL, '@'));
+		strcpy(element, getStringToDelimiter(tempURL, '@'));
 		memcpy(url->password, element, strlen(element));
 		strcpy(tempURL, tempURL + 1);
 	}
 
 	//saving host
-	strcpy(element, processElementUntilChar(tempURL, '/'));
+	strcpy(element, getStringToDelimiter(tempURL, '/'));
 	memcpy(url->host, element, strlen(element));
 
 	//saving url path
 	char* path = (char*) malloc(strlen(tempURL));
 	int startPath = 1;
 	while (strchr(tempURL, '/')) {
-		element = processElementUntilChar(tempURL, '/');
+		element = getStringToDelimiter(tempURL, '/');
 
 		if (startPath) {
 			startPath = 0;
@@ -99,29 +99,25 @@ int parseURL(url* url, const char* urlStr) {
 	return 0;
 }
 
-int getIpByHost(url* url) {
+int getIpByHost(URL* url) {
 	struct hostent* h;
 
 	if ((h = gethostbyname(url->host)) == NULL) {
-		herror("gethostbyname");
-		return 1;
+		perror("gethostbyname()");
+		return -1;
 	}
-
-//	printf("Host name  : %s\n", h->h_name);
-//	printf("IP Address : %s\n", inet_ntoa(*((struct in_addr *) h->h_addr)));
-
 	char* ip = inet_ntoa(*((struct in_addr *) h->h_addr));
 	strcpy(url->ip, ip);
 
 	return 0;
 }
 
-char* processElementUntilChar(char* str, char chr) {
+char* getStringToDelimiter(char* str, char delimiter) {
 	// using temporary string to process substrings
 	char* tempStr = (char*) malloc(strlen(str));
 
 	// calculating length to copy element
-	int index = strlen(str) - strlen(strcpy(tempStr, strchr(str, chr)));
+	int index = strlen(str) - strlen(strcpy(tempStr, strchr(str, delimiter)));
 
 	tempStr[index] = '\0'; // termination char in the end of string
 	strncpy(tempStr, str, index);

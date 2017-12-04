@@ -13,20 +13,20 @@
 
 #include <netinet/in.h>
 
-typedef struct FTP
+typedef struct
 {
     int control_socket_fd; // file descriptor to control socket
     int data_socket_fd; // file descriptor to data socket
-} ftp;
+} FTP;
 
-int ftpConnect(ftp* ftp, const char* ip, int port);
-int ftpLogin(ftp* ftp, const char* user, const char* password);
-int ftpCWD(ftp* ftp, const char* path);
-int ftpPasv(ftp* ftp);
-int ftpRetr(ftp* ftp, const char* filename);
-int ftpDownload(ftp* ftp, const char* filename);
-int ftpDisconnect(ftp* ftp);
+int ftpConnect(FTP* ftp, const char* ip, int port);
+int ftpLogin(FTP* ftp, const char* user, const char* password);
+int ftpCWD(FTP* ftp, const char* path);
+int ftpPasv(FTP* ftp);
+int ftpRetr(FTP* ftp, const char* filename);
+int ftpDownload(FTP* ftp, const char* filename);
+int ftpDisconnect(FTP* ftp);
 
-int ftpSend(ftp* ftp, const char* str, size_t size);
-int ftpRead(ftp* ftp, char* str, size_t size);
+int ftpSend(FTP* ftp, const char* str, size_t size);
+int ftpRead(FTP* ftp, char* str, size_t size);
 

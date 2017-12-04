@@ -6,28 +6,40 @@
 #include <stdlib.h>
 #include <regex.h>
 #include <errno.h>
-
 #include <sys/types.h>
 #include <sys/socket.h>
-
 #include <arpa/inet.h>
-
 #include <netinet/in.h>
 
+//type to use inside URL struct
 typedef char url_content[256];
 
-typedef struct URL {
-	url_content user; // string to user
-	url_content password; // string to password
-	url_content host; // string to host
-	url_content ip; // string to IP
-	url_content path; // string to path
-	url_content filename; // string to filename
-	int port; // integer to port
-} url;
+// Struct that holds information about an URL
+typedef struct{
+	url_content user; 
+	url_content password; 
+	url_content host; 
+	url_content ip;
+	url_content path;
+	url_content filename;
+	int port;
+}URL;
 
-void initURL(url* url);
-int parseURL(url* url, const char* str); // Parse a string with the url to create the URL structure
-int getIpByHost(url* url); // gets an IP by host name
+/**
+ * Initialize an url struct
+ * */
+void initURL(URL* url);
+/**
+ * Parse a url given as url_str and fill the URL struct with the info.
+ * */
+int parseURL(URL* url, const char* url_str);
 
-char* processElementUntilChar(char* str, char chr);
+/**
+ * Sets url->ip. url->host should be defined previously.
+ * */
+int getIpByHost(URL* url);
+
+/**
+ * Cuts the string by the first occurrence of chr. Str is set to be the tail.
+ * */
+char* getStringToDelimiter(char* str, char delimiter);
