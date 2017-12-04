@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
 	if (strlen(url.password) != 0) {
 		password = url.password;
 	} else {
-		password="none";
+		password="guest";
 	}
 
 	// Sending credentials to server
