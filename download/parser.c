@@ -1,6 +1,4 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
+#include "parser.h"
 
 int parseProtocol(char *url, char *protocol) {
   //Go through until '://'
@@ -141,6 +139,7 @@ int parseURL(char *url) {
 
   if((j = parseUser(url, user, i)) < 0) {
     strcpy(user, "anonymous");
+    strcpy(password, "guest");
   } else {
     i = j;
     if((j = parsePassword(url, password, i)) < 0)
