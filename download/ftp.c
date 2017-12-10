@@ -1,4 +1,4 @@
-#include "FTP.h"
+#include "ftp.h"
 
 static int connectSocket(const char* ip, int port) {
 	int sockfd;

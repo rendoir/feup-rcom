@@ -2,7 +2,7 @@ CC = gcc
 
 CFLAGS  = -Wall
 
-SRCS = FTP.c URL.c Download.c
+SRCS = ftp.c parser.c download.c
 
 TARGET = download
 
