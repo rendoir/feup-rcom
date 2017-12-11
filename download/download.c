@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "parser.h"
-#include "ftp.h"
+#include "connection.h"
 
 static void printUsage(char* argv0);
 
@@ -25,7 +25,7 @@ int main(int argc, char** argv) {
 	printf("\nThe IP received to %s was %s\n", url->host, url->ip);
 
 	
-	ftpConnect(ftp, url->ip, url->port);
+	ftp_connect(ftp, url->ip, url->port);
 
 	// Verifying username
 	const char* user = (strlen(url->user) != 0) ? url->user : "anonymous";
@@ -39,33 +39,33 @@ int main(int argc, char** argv) {
 	}
 
 	// Sending credentials to server
-	if (ftpLogin(ftp, user, password)) {
+	if (ftp_login(ftp, user, password)) {
 		printf("ERROR: Cannot login user %s\n", user);
 		return -1;
 	}
 
 
 	// Changing directory
-	if (ftpCWD(ftp, url->directory)) {
+	if (ftp_cwd(ftp, url->directory)) {
 		printf("ERROR: Cannot change directory to the folder of %s\n",
 				url->file);
 		return -1;
 	}
 
 	// Entry in passive mode
-	if (ftpPasv(ftp)) {
+	if (ftp_pasv(ftp)) {
 		printf("ERROR: Cannot entry in passive mode\n");
 		return -1;
 	}
 
 	// Begins transmission of a file from the remote host
-	ftpRetr(ftp, url->file);
+	ftp_retr(ftp, url->file);
 
 	// Starting file transfer
-	ftpDownload(ftp, url->file);
+	ftp_download(ftp, url->file);
 
 	// Disconnecting from server
-	ftpDisconnect(ftp);
+	ftp_disconnect(ftp);
 
 	return 0;
 }
