@@ -6,7 +6,7 @@ static void printUsage(char* argv0);
 
 int main(int argc, char** argv) {
 	URL *url = malloc(sizeof(URL));
-	FTP *ftp = malloc(sizeof(FTP));
+	Connection *ftp = malloc(sizeof(Connection));
 	if (argc != 2) {
 		printUsage(argv[0]);
 		return 1;

@@ -1,4 +1,4 @@
-#include "ftp.h"
+#include "connection.h"
 
 /*
 	struct sockaddr_in {
@@ -12,7 +12,7 @@
 		uint32_t       s_addr;// address in network byte order
 	};
  */
-static int connect_socket(const char* ip, int port) {
+int connect_socket(const char* ip, int port) {
 	int tcp_socket;
 	struct sockaddr_in ip_socket_address;
 
@@ -35,10 +35,10 @@ static int connect_socket(const char* ip, int port) {
 		return -1;
 	}
 
-	return sockfd;
+	return tcp_socket;
 }
 
-int ftp_connect(FTP* ftp, const char* ip, int port) {
+int ftp_connect(Connection* ftp, const char* ip, int port) {
 	int socketfd;
 	char rd[1024]; // read array
 
@@ -58,7 +58,7 @@ int ftp_connect(FTP* ftp, const char* ip, int port) {
 	return 0;
 }
 
-int ftp_login(FTP* ftp, const char* user, const char* password) {
+int ftp_login(Connection* ftp, const char* user, const char* password) {
 	char user_string[256];
 	char pass_string[256];
 
@@ -74,9 +74,6 @@ int ftp_login(FTP* ftp, const char* user, const char* password) {
 				"ERROR: Access denied reading username response.\nftp_read failure.\n");
 		return -1;
 	}
-
-	// cleaning buffer
-	memset(pass_string, 0, sizeof(pass_string));
 
 	// password
 	sprintf(pass_string, "PASS %s\r\n", password);
@@ -94,7 +91,7 @@ int ftp_login(FTP* ftp, const char* user, const char* password) {
 	return 0;
 }
 
-int ftp_cwd(FTP* ftp, const char* path) {
+int ftp_cwd(Connection* ftp, const char* path) {
 	char cwd[1024];
 
 	sprintf(cwd, "CWD %s\r\n", path);
@@ -111,7 +108,7 @@ int ftp_cwd(FTP* ftp, const char* path) {
 	return 0;
 }
 
-int ftp_pasv(FTP* ftp) {
+int ftp_pasv(Connection* ftp) {
 	char pasv[1024] = "PASV\r\n";
 	if (ftp_send(ftp, pasv, strlen(pasv))) {
 		printf("ERROR: Cannot enter in passive mode.\n");
@@ -157,7 +154,7 @@ int ftp_pasv(FTP* ftp) {
 	return 0;
 }
 
-int ftp_retr(FTP* ftp, const char* filename) {
+int ftp_retr(Connection* ftp, const char* filename) {
 	char retr[1024];
 
 	sprintf(retr, "RETR %s\r\n", filename);
@@ -174,7 +171,7 @@ int ftp_retr(FTP* ftp, const char* filename) {
 	return 0;
 }
 
-int ftp_download(FTP* ftp, const char* filename) {
+int ftp_download(Connection* ftp, const char* filename) {
 	FILE* file;
 	int bytes;
 
@@ -202,7 +199,7 @@ int ftp_download(FTP* ftp, const char* filename) {
 	return 0;
 }
 
-int ftp_disconnect(FTP* ftp) {
+int ftp_disconnect(Connection* ftp) {
 	char disc[1024];
 
 	if (ftp_read(ftp, disc, sizeof(disc))) {
@@ -222,7 +219,7 @@ int ftp_disconnect(FTP* ftp) {
 	return 0;
 }
 
-int ftp_send(FTP* ftp, const char* str, size_t size) {
+int ftp_send(Connection* ftp, const char* str, size_t size) {
 	int bytes;
 
 	if ((bytes = write(ftp->control_socket_fd, str, size)) <= 0) {
@@ -235,7 +232,7 @@ int ftp_send(FTP* ftp, const char* str, size_t size) {
 	return 0;
 }
 
-int ftp_read(FTP* ftp, char* str, size_t size) {
+int ftp_read(Connection* ftp, char* str, size_t size) {
 	FILE* fp = fdopen(ftp->control_socket_fd, "r");
 
 	do {

@@ -11,21 +11,32 @@
 #include <unistd.h>
 #include <netinet/in.h>
 
-typedef struct FTP
+typedef struct Connection
 {
     int control_socket_fd; // file descriptor to control socket
     int data_socket_fd; // file descriptor to data socket
-} FTP;
+} Connection;
 
-int ftp_connect(FTP* ftp, const char* ip, int port);
-int ftp_disconnect(FTP* ftp);
-int ftp_download(FTP* ftp, const char* filename);
-int ftp_cwd(FTP* ftp, const char* path);
-int ftp_login(FTP* ftp, const char* user, const char* password);
-int ftp_pasv(FTP* ftp);
-int ftp_read(FTP* ftp, char* str, size_t size);
-int ftp_retr(FTP* ftp, const char* filename);
-int ftp_send(FTP* ftp, const char* str, size_t size);
+// get tcp socket
+int connect_socket(const char* ip, int port);
+//
+int ftp_connect(Connection* ftp, const char* ip, int port);
+//
+int ftp_disconnect(Connection* ftp);
+//
+int ftp_download(Connection* ftp, const char* filename);
+//
+int ftp_cwd(Connection* ftp, const char* path);
+//
+int ftp_login(Connection* ftp, const char* user, const char* password);
+//
+int ftp_pasv(Connection* ftp);
+//
+int ftp_read(Connection* ftp, char* str, size_t size);
+//
+int ftp_retr(Connection* ftp, const char* filename);
+//
+int ftp_send(Connection* ftp, const char* str, size_t size);
 
 
 
