@@ -13,15 +13,19 @@ int main(int argc, char** argv) {
 		print_usage();
 		return 1;
 	}
-	if (parseURL(argv[1], url) != 0){
+	if (parseURL(argv[1], url)) {
+		printf("[ERROR] Failed to parse URL.\n");
 		return -1;	
 	}
 	if (getIpByHost(url)) {
-		printf("ERROR: Cannot find ip to hostname %s.\n", url->host);
+		printf("[ERROR] Couldn't find IP by hostname %s.\n", url->host);
 		return -1;
 	}
-	printf("\nThe IP received to %s was %s\n", url->host, url->ip);
-	ftp_connect(ftp, url->ip, url->port);
+	printf("\nHOST:%s\nIP:%s\n", url->host, url->ip);
+	if(ftp_connect(ftp, url->ip, url->port)) {
+		printf("[ERROR] Couldn't connect\n");
+		return -1;
+	}
 	const char* user = (strlen(url->user) != 0) ? url->user : "anonymous";
 	char* password;
 	if (strlen(url->password) != 0) {
@@ -30,20 +34,29 @@ int main(int argc, char** argv) {
 		password="guest";
 	}
 	if (ftp_login(ftp, user, password)) {
-		printf("ERROR: Cannot login user %s\n", user);
+		printf("[ERROR] Couldn't login user %s:%s\n", user, password);
 		return -1;
 	}
 	if (ftp_cwd(ftp, url->directory)) {
-		printf("ERROR: Cannot change directory to the folder of %s\n",url->file);
+		printf("[ERROR] Couldn't change directory to %s\n", url->directory);
 		return -1;
 	}
 	if (ftp_pasv(ftp)) {
-		printf("ERROR: Cannot entry in passive mode\n");
+		printf("[ERROR] Couldn't enter passive mode\n");
 		return -1;
 	}
-	ftp_retr(ftp, url->file);
-	ftp_download(ftp, url->file);
-	ftp_disconnect(ftp);
+	if(ftp_retr(ftp, url->file)) {
+		printf("[ERROR] Couldn't retrieve file %s\n", url->file);
+		return -1;
+	}
+	if(ftp_download(ftp, url->file)) {
+		printf("[ERROR] Couldn't download file %s\n", url->file);
+		return -1;
+	}
+	if(ftp_disconnect(ftp)) {
+		printf("[ERROR] Couldn't disconnect.\n");
+		return -1;
+	}
 
 	return 0;
 }
