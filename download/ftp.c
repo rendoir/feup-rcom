@@ -35,8 +35,8 @@ int ftpConnect(FTP* ftp, const char* ip, int port) {
 		return -1;
 	}
 
-	ftp->control_socket_fd = socketfd;
-	ftp->data_socket_fd = 0;
+	ftp->control_fd = socketfd;
+	ftp->data_fd = 0;
 
 	if (ftpRead(ftp, rd, sizeof(rd))) {
 		printf("ERROR: ftpRead failure.\n");
@@ -135,7 +135,7 @@ int ftpPasv(FTP* ftp) {
 	printf("IP: %s\n", pasv);
 	printf("PORT: %d\n", portResult);
 
-	if ((ftp->data_socket_fd = connectSocket(pasv, portResult)) < 0) {
+	if ((ftp->data_fd = connectSocket(pasv, portResult)) < 0) {
 		printf(
 				"ERROR: Incorrect file descriptor associated to ftp data socket fd.\n");
 		return -1;
@@ -171,7 +171,7 @@ int ftpDownload(FTP* ftp, const char* filename) {
 	}
 
 	char buf[1024];
-	while ((bytes = read(ftp->data_socket_fd, buf, sizeof(buf)))) {
+	while ((bytes = read(ftp->data_fd, buf, sizeof(buf)))) {
 		if (bytes < 0) {
 			printf("ERROR: Nothing was received from data socket fd.\n");
 			return -1;
@@ -184,7 +184,7 @@ int ftpDownload(FTP* ftp, const char* filename) {
 	}
 
 	fclose(file);
-	close(ftp->data_socket_fd);
+	close(ftp->data_fd);
 
 	return 0;
 }
@@ -203,8 +203,8 @@ int ftpDisconnect(FTP* ftp) {
 		return -1;
 	}
 
-	if (ftp->control_socket_fd)
-		close(ftp->control_socket_fd);
+	if (ftp->control_fd)
+		close(ftp->control_fd);
 
 	return 0;
 }
@@ -212,7 +212,7 @@ int ftpDisconnect(FTP* ftp) {
 int ftpSend(FTP* ftp, const char* str, size_t size) {
 	int bytes;
 
-	if ((bytes = write(ftp->control_socket_fd, str, size)) <= 0) {
+	if ((bytes = write(ftp->control_fd, str, size)) <= 0) {
 		printf("WARNING: Nothing was send.\n");
 		return -1;
 	}
@@ -223,7 +223,7 @@ int ftpSend(FTP* ftp, const char* str, size_t size) {
 }
 
 int ftpRead(FTP* ftp, char* str, size_t size) {
-	FILE* fp = fdopen(ftp->control_socket_fd, "r");
+	FILE* fp = fdopen(ftp->control_fd, "r");
 
 	do {
 		memset(str, 0, size);

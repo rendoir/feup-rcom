@@ -15,8 +15,8 @@
 
 typedef struct FTP
 {
-    int control_socket_fd; // file descriptor to control socket
-    int data_socket_fd; // file descriptor to data socket
+    int control_fd; // file descriptor to control socket
+    int data_fd; // file descriptor to data socket
 } FTP;
 
 int ftpConnect(FTP* ftp, const char* ip, int port);
