@@ -212,8 +212,6 @@ int ftp_send(Connection* ftp, const char* str, size_t size) {
 		return -1;
 	}
 
-	printf("Bytes sent: %d\nData: %s\n", bytes, str);
-
 	return 0;
 }
 
@@ -223,7 +221,6 @@ int ftp_read(Connection* ftp, char* str, size_t size) {
 	do {
 		memset(str, 0, size);
 		str = fgets(str, size, fp);
-		printf("%s", str);
 	} while (!('1' <= str[0] && str[0] <= '5') || str[3] != ' ');
 
 	return 0;

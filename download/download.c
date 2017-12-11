@@ -9,6 +9,7 @@ void print_usage() {
 int main(int argc, char** argv) {
 	URL *url = malloc(sizeof(URL));
 	Connection *ftp = malloc(sizeof(Connection));
+	printf("WELCOME: FTP CLIENT\n");
 	if (argc != 2) {
 		print_usage();
 		return 1;
