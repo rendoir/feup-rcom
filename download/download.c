@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 		printf("[ERROR] Couldn't connect\n");
 		return -1;
 	}
-	printf("\nConnected to: %s\n\n", url->host);
+	printf("\nConnected to: %s\n", url->host);
 	const char* user = (strlen(url->user) != 0) ? url->user : "anonymous";
 	char* password;
 	if (strlen(url->password) != 0) {
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 		printf("[ERROR] Couldn't enter passive mode\n");
 		return -1;
 	}
-	printf("Started retrieving.\n");
+	printf("\nStarted retrieving.\n");
 	if(ftp_retr(ftp, url->file)) {
 		printf("[ERROR] Couldn't retrieve file %s\n", url->file);
 		return -1;
