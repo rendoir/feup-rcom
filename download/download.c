@@ -22,11 +22,11 @@ int main(int argc, char** argv) {
 		printf("[ERROR] Couldn't find IP by hostname %s.\n", url->host);
 		return -1;
 	}
-	printf("\nHOST:%s\nIP:%s\n", url->host, url->ip);
 	if(ftp_connect(ftp, url->ip, url->port)) {
 		printf("[ERROR] Couldn't connect\n");
 		return -1;
 	}
+	printf("\nConnected to: %s\n\n", url->host);
 	const char* user = (strlen(url->user) != 0) ? url->user : "anonymous";
 	char* password;
 	if (strlen(url->password) != 0) {
@@ -46,18 +46,23 @@ int main(int argc, char** argv) {
 		printf("[ERROR] Couldn't enter passive mode\n");
 		return -1;
 	}
+	printf("Started retrieving.\n");
 	if(ftp_retr(ftp, url->file)) {
 		printf("[ERROR] Couldn't retrieve file %s\n", url->file);
 		return -1;
 	}
+	printf("Finished retrieving.\n");
+	printf("Started downloading.\n");
 	if(ftp_download(ftp, url->file)) {
 		printf("[ERROR] Couldn't download file %s\n", url->file);
 		return -1;
 	}
+	printf("Finished downloading.\n");
 	if(ftp_disconnect(ftp)) {
 		printf("[ERROR] Couldn't disconnect.\n");
 		return -1;
 	}
+	printf("\nDisconnected.\n");
 
 	return 0;
 }
