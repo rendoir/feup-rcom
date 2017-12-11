@@ -22,7 +22,6 @@ int connect_socket(const char* ip, int port) {
 	ip_socket_address.sin_addr.s_addr = inet_addr(ip);
 	ip_socket_address.sin_port = htons(port); 
 
-	// tcp_socket = socket(AF_INET, SOCK_STREAM, 0);
 	if ((tcp_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		perror("socket()");
 		return -1;
@@ -39,16 +38,16 @@ int connect_socket(const char* ip, int port) {
 }
 
 int ftp_connect(Connection* ftp, const char* ip, int port) {
-	int socketfd;
-	char rd[1024]; // read array
+	int socket_fd;
+	char rd[1024];
 
-	if ((socketfd = connect_socket(ip, port)) < 0) {
+	if ((socket_fd = connect_socket(ip, port)) < 0) {
 		printf("ERROR: Cannot connect socket.\n");
 		return -1;
 	}
 
-	ftp->control_socket_fd = socketfd;
-	ftp->data_socket_fd = 0;
+	ftp->control_socket_fd = socket_fd;
+	ftp->passive_socket_fd = 0;
 
 	if (ftp_read(ftp, rd, sizeof(rd))) {
 		printf("ERROR: ftp_read failure.\n");
@@ -62,7 +61,6 @@ int ftp_login(Connection* ftp, const char* user, const char* password) {
 	char user_string[256];
 	char pass_string[256];
 
-	// username
 	sprintf(user_string, "USER %s\r\n", user);
 	if (ftp_send(ftp, user_string, strlen(user_string))) {
 		printf("ERROR: ftp_send failure.\n");
@@ -74,8 +72,6 @@ int ftp_login(Connection* ftp, const char* user, const char* password) {
 				"ERROR: Access denied reading username response.\nftp_read failure.\n");
 		return -1;
 	}
-
-	// password
 	sprintf(pass_string, "PASS %s\r\n", password);
 	if (ftp_send(ftp, pass_string, strlen(pass_string))) {
 		printf("ERROR: ftp_send failure.\n");
@@ -120,7 +116,6 @@ int ftp_pasv(Connection* ftp) {
 		return -1;
 	}
 
-	// starting process information
 	int ipPart1, ipPart2, ipPart3, ipPart4;
 	int port1, port2;
 	if ((sscanf(pasv, "227 Entering Passive Mode (%d,%d,%d,%d,%d,%d)", &ipPart1,
@@ -128,24 +123,19 @@ int ftp_pasv(Connection* ftp) {
 		printf("ERROR: Cannot process information to calculating port.\n");
 		return -1;
 	}
-
-	// cleaning buffer
 	memset(pasv, 0, sizeof(pasv));
 
-	// forming ip
 	if ((sprintf(pasv, "%d.%d.%d.%d", ipPart1, ipPart2, ipPart3, ipPart4))
 			< 0) {
 		printf("ERROR: Cannot form ip address.\n");
 		return -1;
 	}
-
-	// calculating new port
-	int portResult = port1 * 256 + port2;
+	int new_port = port1 * 256 + port2;
 
 	printf("IP: %s\n", pasv);
-	printf("PORT: %d\n", portResult);
+	printf("PORT: %d\n", new_port);
 
-	if ((ftp->data_socket_fd = connect_socket(pasv, portResult)) < 0) {
+	if ((ftp->passive_socket_fd = connect_socket(pasv, new_port)) < 0) {
 		printf(
 				"ERROR: Incorrect file descriptor associated to ftp data socket fd.\n");
 		return -1;
@@ -181,7 +171,7 @@ int ftp_download(Connection* ftp, const char* filename) {
 	}
 
 	char buf[1024];
-	while ((bytes = read(ftp->data_socket_fd, buf, sizeof(buf)))) {
+	while ((bytes = read(ftp->passive_socket_fd, buf, sizeof(buf)))) {
 		if (bytes < 0) {
 			printf("ERROR: Nothing was received from data socket fd.\n");
 			return -1;
@@ -194,7 +184,7 @@ int ftp_download(Connection* ftp, const char* filename) {
 	}
 
 	fclose(file);
-	close(ftp->data_socket_fd);
+	close(ftp->passive_socket_fd);
 
 	return 0;
 }

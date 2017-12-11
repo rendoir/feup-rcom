@@ -116,8 +116,8 @@ int parsePort(char *url, int *port, int i) {
 int parsePath(char *url, char *directory,char *file, int i) {
   //Go through until end of string
   int j = 0;
-  int iterator = i;
-  int lastSlashIndex = i;
+  int iterator = i-1;
+  int lastSlashIndex = i-1;
   char current_char;
   // Get last slash index.
   while (1){
@@ -137,8 +137,6 @@ int parsePath(char *url, char *directory,char *file, int i) {
   }
   j = 0;
   lastSlashIndex++;
-  printf("Last slash: %d",lastSlashIndex);
-  printf("iterator: %d",iterator);
   while(lastSlashIndex < iterator){
     file[j] = url[lastSlashIndex];
     lastSlashIndex++;
@@ -217,10 +215,12 @@ int getIpByHost(URL* url) {
 /*
 int main() {
   URL* url_struct = malloc(sizeof(URL));
+  parseURL("ftp://demo:password@test.rebex.net:21/readme.txt",url_struct);
   parseURL("ftp://ftp.up.pt/",url_struct);
   parseURL("ftp://user@ftp.up.pt/",url_struct);
   parseURL("ftp://user:password@ftp.up.pt/",url_struct);
   parseURL("ftp://user:password@ftp.up.pt:69/",url_struct);
   parseURL("ftp://user:password@ftp.up.pt:69/directory/to/file",url_struct);
   parseURL("ftp://user:password@ftp.up.pt/dir1/dir2/file.txt",url_struct);
-}*/
+}
+*/
